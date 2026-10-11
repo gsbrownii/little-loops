@@ -1,0 +1,5 @@
+# Keep LF everywhere so the service worker's content hash is identical on every machine.
+* text=auto eol=lf
+*.png binary
+*.mp3 binary
+*.ico binary
