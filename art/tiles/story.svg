@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Home tile: Story Movie. A movie clapperboard popping out of an open storybook.
+       Original art for Little Loops. Transparent background (the tile colour shows through). -->
+  <defs>
+    <clipPath id="story-arm"><rect x="0" y="-18" width="114" height="18" rx="4"/></clipPath>
+    <!-- the band is clipped to the board's own rounded shape, so nothing pokes out past its corners -->
+    <clipPath id="story-band"><rect x="0" y="0" width="114" height="80" rx="9"/></clipPath>
+  </defs>
+  <g stroke="#2B2D42" stroke-linecap="round" stroke-linejoin="round">
+    <!-- clapperboard -->
+    <g transform="translate(42 58) rotate(-6)">
+      <rect x="0" y="0" width="114" height="80" rx="9" fill="#9B5DE5" stroke-width="5"/>
+      <g clip-path="url(#story-band)">
+        <rect x="0" y="0" width="114" height="18" fill="#FFFFFF" stroke="none"/>
+        <path d="M6 0 H22 L14 18 H-2 Z M36 0 H52 L44 18 H28 Z M66 0 H82 L74 18 H58 Z M96 0 H112 L104 18 H88 Z" fill="#2B2D42" stroke="none"/>
+      </g>
+      <path d="M0 18 H114" fill="none" stroke-width="4.5"/>
+      <rect x="0" y="0" width="114" height="80" rx="9" fill="none" stroke-width="5"/>
+      <!-- play symbol -->
+      <path d="M45 27 L74 43 L45 59 Z" fill="#FFFFFF" stroke-width="5"/>
+      <!-- the clapper arm, opened -->
+      <g transform="rotate(-14)">
+        <g clip-path="url(#story-arm)">
+          <rect x="0" y="-18" width="114" height="18" fill="#FFFFFF" stroke="none"/>
+          <path d="M14 -18 H30 L38 0 H22 Z M44 -18 H60 L68 0 H52 Z M74 -18 H90 L98 0 H82 Z M104 -18 H120 L128 0 H112 Z" fill="#2B2D42" stroke="none"/>
+        </g>
+        <rect x="0" y="-18" width="114" height="18" rx="4" fill="none" stroke-width="4.5"/>
+      </g>
+      <circle cx="3" cy="0" r="5" fill="#B8BDD0" stroke-width="3.5"/>
+    </g>
+    <!-- open storybook -->
+    <path d="M8 132 V186 Q54 180 100 195 Q146 180 192 186 V132 Z" fill="#FF6B6B" stroke-width="5"/>
+    <path d="M100 134 C82 122 46 120 17 128 V180 C46 172 82 174 100 186 Z" fill="#FFFFFF" stroke-width="5"/>
+    <path d="M100 134 C118 122 154 120 183 128 V180 C154 172 118 174 100 186 Z" fill="#FFFFFF" stroke-width="5"/>
+    <!-- left page: a little hill and sun -->
+    <circle cx="70" cy="143" r="8" fill="#FFD166" stroke-width="3.5"/>
+    <path d="M28 168 Q50 146 74 162 Q82 167 88 170 C76 168 58 166 28 171 Z" fill="#3DDC97" stroke-width="3.5"/>
+    <!-- right page: a heart -->
+    <path d="M141 168 C125 158 126 143 135.5 145 C138.5 145.7 141 149.5 141 149.5 C141 149.5 143.5 145.7 146.5 145 C156 143 157 158 141 168 Z" fill="#FF8FAB" stroke-width="3.5"/>
+  </g>
+</svg>

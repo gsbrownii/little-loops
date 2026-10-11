@@ -1,0 +1,185 @@
+{
+  "$schema": "../../schemas/robot-levels.schema.json",
+  "schema": "robot-levels/1",
+  "grid": { "cols": 4, "rows": 4 },
+  "levels": [
+    {
+      "id": "r01",
+      "start": [1, 2],
+      "goal": [2, 2],
+      "obstacles": [],
+      "cards": ["right"],
+      "maxCards": 1,
+      "say": "Drag the arrow into the box, then press the green play button!",
+      "solution": ["right"]
+    },
+    {
+      "id": "r02",
+      "start": [0, 3],
+      "goal": [2, 3],
+      "obstacles": [],
+      "cards": ["right"],
+      "maxCards": 2,
+      "say": "The star is farther now. How many arrows does the robot need?",
+      "solution": ["right", "right"]
+    },
+    {
+      "id": "r03",
+      "start": [2, 3],
+      "goal": [2, 0],
+      "obstacles": [],
+      "cards": ["up"],
+      "maxCards": 3,
+      "say": "New arrow! The up arrow makes the robot go up.",
+      "solution": ["up", "up", "up"]
+    },
+    {
+      "id": "r04",
+      "start": [0, 2],
+      "goal": [2, 1],
+      "obstacles": [],
+      "cards": ["up", "right"],
+      "maxCards": 3,
+      "say": "Now mix two kinds of arrows to reach the star!",
+      "solution": ["right", "right", "up"]
+    },
+    {
+      "id": "r05",
+      "start": [3, 3],
+      "goal": [1, 2],
+      "obstacles": [],
+      "cards": ["up", "left"],
+      "maxCards": 4,
+      "say": "New arrow! The left arrow makes the robot go left.",
+      "solution": ["left", "left", "up"]
+    },
+    {
+      "id": "r06",
+      "start": [1, 0],
+      "goal": [2, 3],
+      "obstacles": [],
+      "cards": ["down", "right"],
+      "maxCards": 5,
+      "say": "New arrow! The down arrow makes the robot go down.",
+      "solution": ["down", "down", "down", "right"]
+    },
+    {
+      "id": "r07",
+      "start": [3, 1],
+      "goal": [1, 3],
+      "obstacles": [],
+      "cards": ["up", "down", "left", "right"],
+      "maxCards": 5,
+      "say": "Now you have all four arrows! Which ones does the robot need?",
+      "hint": "Look where the star is. Go left, then down!",
+      "solution": ["left", "left", "down", "down"]
+    },
+    {
+      "id": "r08",
+      "start": [0, 3],
+      "goal": [2, 0],
+      "obstacles": [],
+      "cards": ["up", "left", "right"],
+      "maxCards": 6,
+      "say": "The star is way up high! Can you find a way there?",
+      "hint": "Follow the sparkly dots. Use one arrow for each step!",
+      "solution": ["up", "right", "up", "right", "up"]
+    },
+    {
+      "id": "r09",
+      "start": [0, 0],
+      "goal": [3, 2],
+      "obstacles": [],
+      "cards": ["up", "down", "right"],
+      "maxCards": 6,
+      "say": "A long trip! Count the steps to the star.",
+      "hint": "Count the sparkly dots. One arrow for every step!",
+      "solution": ["right", "right", "right", "down", "down"]
+    },
+    {
+      "id": "r10",
+      "start": [0, 1],
+      "goal": [3, 1],
+      "obstacles": [{ "at": [2, 2], "kind": "rock" }],
+      "cards": ["right", "repeat3"],
+      "maxCards": 2,
+      "repeatCapacity": 1,
+      "say": "Put the arrow inside the repeat card. It goes three times! Rocks block the way.",
+      "hint": "Drop the arrow into the little box on the repeat card, then press play!",
+      "solution": [{ "repeat": 3, "do": ["right"] }]
+    },
+    {
+      "id": "r11",
+      "start": [3, 3],
+      "goal": [0, 1],
+      "obstacles": [{ "at": [1, 3], "kind": "bush" }],
+      "cards": ["up", "left", "repeat2", "repeat3"],
+      "maxCards": 2,
+      "repeatCapacity": 1,
+      "say": "Two repeat cards now! One goes two times, one goes three times.",
+      "hint": "The bush is in the way! Go up first. Count the sparkly dots!",
+      "solution": [{ "repeat": 2, "do": ["up"] }, { "repeat": 3, "do": ["left"] }]
+    },
+    {
+      "id": "r12",
+      "start": [0, 2],
+      "goal": [3, 2],
+      "obstacles": [{ "at": [2, 2], "kind": "rock" }],
+      "cards": ["up", "down", "right", "repeat3"],
+      "maxCards": 3,
+      "repeatCapacity": 1,
+      "say": "Oh no, a rock is in the way! Can you go around it?",
+      "hint": "Go over or under the rock. Follow the sparkly dots!",
+      "solution": ["up", { "repeat": 3, "do": ["right"] }, "down"]
+    },
+    {
+      "id": "r13",
+      "start": [0, 3],
+      "goal": [3, 0],
+      "obstacles": [
+        { "at": [2, 3], "kind": "rock" },
+        { "at": [3, 3], "kind": "rock" },
+        { "at": [3, 2], "kind": "rock" },
+        { "at": [0, 1], "kind": "bush" }
+      ],
+      "cards": ["up", "right", "repeat3"],
+      "maxCards": 2,
+      "repeatCapacity": 2,
+      "say": "New! Put two arrows inside one repeat card to climb the stairs!",
+      "hint": "Right, then up, again and again! Put both inside the repeat card.",
+      "solution": [{ "repeat": 3, "do": ["right", "up"] }]
+    },
+    {
+      "id": "r14",
+      "start": [3, 0],
+      "goal": [0, 3],
+      "obstacles": [
+        { "at": [2, 0], "kind": "rock" },
+        { "at": [2, 3], "kind": "puddle" }
+      ],
+      "cards": ["down", "left", "right", "repeat3"],
+      "maxCards": 2,
+      "repeatCapacity": 2,
+      "say": "Down the stairs we go! Watch out for the rock and the puddle.",
+      "hint": "The rock is in the way. Try going down first!",
+      "solution": [{ "repeat": 3, "do": ["down", "left"] }]
+    },
+    {
+      "id": "r15",
+      "start": [0, 0],
+      "goal": [0, 3],
+      "obstacles": [
+        { "at": [0, 1], "kind": "rock" },
+        { "at": [0, 2], "kind": "rock" },
+        { "at": [1, 2], "kind": "bush" },
+        { "at": [3, 1], "kind": "puddle" }
+      ],
+      "cards": ["down", "left", "right", "repeat3"],
+      "maxCards": 2,
+      "repeatCapacity": 2,
+      "say": "Last puzzle! The star is hiding behind the rocks. Can you reach it?",
+      "hint": "Go down the stairs, then left to the star!",
+      "solution": [{ "repeat": 3, "do": ["right", "down"] }, { "repeat": 3, "do": ["left"] }]
+    }
+  ]
+}

@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:little-loops:schema:story-draft:1",
+  "$comment": "DRAFT - NOT USED BY THE APP YET. The Story Movie module does not exist; this format is a proposal so content tools can be designed early. Expect changes before the module ships; when it does, the format id becomes \"story/1\".",
+  "title": "Little Loops - Story Movie stories (DRAFT, story-draft/1)",
+  "description": "DRAFT format for the future Story Movie activity of Little Loops (ages 4-7, no reading required). A story is a short animated movie made of scenes. Each scene shows one Coloring background (by id, from data/coloring/backgrounds.json) with up to 3 characters - each a Coloring animal (by id, from data/coloring/animals.json) optionally wearing a Coloring accessory (by id, from data/coloring/accessories.json) - and plays: first the spoken `narration`, then the `timeline` of simple actions one after another (enter, move-to, jump, wave, say, wait). Everything a child must understand is spoken; on-screen text is optional. Proposed location: data/stories/stories.json (one file holding all stories, like the other content files, because a static web host cannot list a folder). COORDINATES: scene 600 x 600, origin top-left, y grows DOWN (same as Coloring backgrounds). A character's (x, y) is where its FEET touch the ground = the bottom-center of its 300 x 300 animal box; `size` scales that box (1 = 300 units tall; the Coloring picture uses 1.2 = 360 units; 0.5-0.7 suits 2-3 characters). The Coloring picture's placement equals {\"x\": 300, \"y\": 570, \"size\": 1.2}. Ground lines: keep y between ~480 and ~580 so characters stand on the background's ground. `node tools/validate.mjs` checks story files against this schema plus cross-references (ids exist, `who` names a character in the scene, enter comes first, characters stay inside the scene). Any JSON file under data/stories/ is checked as this format, so its \"schema\" must be exactly \"story-draft/1\".",
+  "type": "object",
+  "required": ["schema", "stories"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional editor hint pointing at this schema file (e.g. \"../../schemas/story.schema.json\"). Ignored by the app."
+    },
+    "schema": {
+      "const": "story-draft/1",
+      "description": "Format identifier. Must be exactly \"story-draft/1\" while this format is a draft."
+    },
+    "stories": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 24,
+      "description": "Stories in the order the story picker shows them. Ids must be unique.",
+      "items": { "$ref": "#/$defs/story" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "maxLength": 40,
+      "description": "Lowercase letters, digits and dashes, starting with a letter or digit."
+    },
+    "spoken": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 110,
+      "pattern": "^[^<>{}]*[^<>{}\\s][^<>{}]*$",
+      "description": "One short spoken sentence (text-to-speech), warm and positive, in simple US English words a 4-year-old understands (color, favorite, mom). Max 110 characters (hard limit: speech gets cut off); keep it to 15 words or fewer (the validator warns above 15). No symbols, emoji or markup (< > { } and emoji are errors); never scold."
+    },
+    "seconds": {
+      "type": "number",
+      "minimum": 0.2,
+      "maximum": 5,
+      "description": "A duration in seconds."
+    },
+    "story": {
+      "type": "object",
+      "required": ["id", "title", "say", "scenes"],
+      "additionalProperties": false,
+      "description": "One short movie: 1-8 scenes, ideally 3-5, about 30-90 seconds in total, with a simple beginning, a small problem or surprise, and a happy ending. Friendly, never scary; no copyrighted characters; characters can have simple invented names.",
+      "properties": {
+        "id": { "$ref": "#/$defs/id", "description": "Stable story id (also the save key for 'watched' progress); never rename once published." },
+        "title": { "type": "string", "minLength": 1, "maxLength": 40, "description": "Name for grown-ups and screen readers, e.g. \"The Picnic\"." },
+        "say": { "$ref": "#/$defs/spoken", "description": "Spoken when the child taps the story's tile, e.g. \"A story about a picnic!\"." },
+        "scenes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/scene" }
+        }
+      }
+    },
+    "scene": {
+      "type": "object",
+      "required": ["background", "characters", "narration", "timeline"],
+      "additionalProperties": false,
+      "description": "One shot: a background, the characters in it, narration spoken when the scene opens, then the timeline. The movie moves to the next scene when the timeline ends.",
+      "properties": {
+        "id": { "$ref": "#/$defs/id", "description": "Optional scene id (for tooling and debugging)." },
+        "background": { "$ref": "#/$defs/id", "description": "Id of a Coloring background (data/coloring/backgrounds.json), e.g. \"meadow\", \"beach\", \"space\", \"underwater\", \"snowy\", \"farm\"." },
+        "characters": {
+          "type": "array",
+          "maxItems": 3,
+          "description": "0-3 characters on stage. Character ids must be unique within the scene. Characters with an `enter` action start off-stage; all others are visible from the start.",
+          "items": { "$ref": "#/$defs/character" }
+        },
+        "narration": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "description": "1-3 short narrator lines spoken in order when the scene opens, before the timeline starts.",
+          "items": { "$ref": "#/$defs/spoken" }
+        },
+        "timeline": {
+          "type": "array",
+          "maxItems": 12,
+          "description": "Actions played one after another (each waits for the previous one to finish). May be empty for a narration-only scene.",
+          "items": { "$ref": "#/$defs/action" }
+        }
+      }
+    },
+    "character": {
+      "type": "object",
+      "required": ["id", "animal", "x", "y"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id", "description": "Handle used by timeline actions (`who`), unique in the scene, e.g. \"kit\". Reuse the same id for the same character across scenes." },
+        "animal": { "$ref": "#/$defs/id", "description": "Id of a Coloring animal (data/coloring/animals.json), e.g. \"cat\", \"dog\", \"bunny\", \"bear\", \"penguin\", \"dinosaur\"." },
+        "accessory": { "$ref": "#/$defs/id", "description": "Optional id of a Coloring accessory it wears or holds (data/coloring/accessories.json), e.g. \"party-hat\", \"crown\", \"sunglasses\", \"bow-tie\", \"balloon\", \"ice-cream\"." },
+        "x": { "type": "number", "minimum": 0, "maximum": 600, "description": "Scene x of the character's feet (center of the bottom of its animal box). Keep the whole box (300 * size wide) inside 0..600." },
+        "y": { "type": "number", "minimum": 0, "maximum": 600, "description": "Scene y of the character's feet (bottom of its animal box), usually 480-580 so it stands on the ground." },
+        "size": { "type": "number", "minimum": 0.3, "maximum": 1.2, "default": 0.6, "description": "Scale of the 300 x 300 animal box: 1 = 300 units tall, 0.6 = 180 units; the Coloring picture uses 1.2 (360 units). Use 0.5-0.7 for two or three characters." },
+        "facing": { "type": "string", "enum": ["left", "right"], "default": "right", "description": "\"right\" = as drawn in the Coloring art; \"left\" = mirrored. move-to and enter turn the character toward where it walks." }
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": ["action"],
+      "description": "One timeline step, selected by `action`. `who` must be the id of a character in the same scene.",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": ["enter", "move-to", "jump", "wave", "say", "wait"],
+          "description": "enter = walk in from off-stage to the character's x, y; move-to = walk to a new spot; jump = hop in place; wave = wave the raised paw; say = the character speaks a line (text-to-speech, with a little bounce and a speech-bubble icon); wait = pause."
+        }
+      },
+      "allOf": [
+        { "if": { "properties": { "action": { "const": "enter" } }, "required": ["action"] }, "then": { "$ref": "#/$defs/enterAction" } },
+        { "if": { "properties": { "action": { "const": "move-to" } }, "required": ["action"] }, "then": { "$ref": "#/$defs/moveAction" } },
+        { "if": { "properties": { "action": { "const": "jump" } }, "required": ["action"] }, "then": { "$ref": "#/$defs/jumpAction" } },
+        { "if": { "properties": { "action": { "const": "wave" } }, "required": ["action"] }, "then": { "$ref": "#/$defs/waveAction" } },
+        { "if": { "properties": { "action": { "const": "say" } }, "required": ["action"] }, "then": { "$ref": "#/$defs/sayAction" } },
+        { "if": { "properties": { "action": { "const": "wait" } }, "required": ["action"] }, "then": { "$ref": "#/$defs/waitAction" } }
+      ]
+    },
+    "enterAction": {
+      "type": "object",
+      "required": ["action", "who"],
+      "additionalProperties": false,
+      "description": "The character walks in from off-stage to its (x, y). At most one enter per character per scene, and it must be that character's first action.",
+      "properties": {
+        "action": { "const": "enter" },
+        "who": { "$ref": "#/$defs/id" },
+        "from": { "type": "string", "enum": ["left", "right"], "description": "Side it walks in from. Default: the side nearer to its x." },
+        "duration": { "$ref": "#/$defs/seconds", "default": 1.5, "description": "Walking time in seconds (default 1.5)." }
+      }
+    },
+    "moveAction": {
+      "type": "object",
+      "required": ["action", "who", "x"],
+      "additionalProperties": false,
+      "description": "The character walks (turning to face the way it goes) to a new spot and stays there.",
+      "properties": {
+        "action": { "const": "move-to" },
+        "who": { "$ref": "#/$defs/id" },
+        "x": { "type": "number", "minimum": 0, "maximum": 600, "description": "Target feet x in the scene." },
+        "y": { "type": "number", "minimum": 0, "maximum": 600, "description": "Target feet y; default: stay on the same ground line." },
+        "duration": { "$ref": "#/$defs/seconds", "default": 1.5, "description": "Walking time in seconds (default 1.5)." }
+      }
+    },
+    "jumpAction": {
+      "type": "object",
+      "required": ["action", "who"],
+      "additionalProperties": false,
+      "description": "Happy hop(s) in place.",
+      "properties": {
+        "action": { "const": "jump" },
+        "who": { "$ref": "#/$defs/id" },
+        "times": { "type": "integer", "minimum": 1, "maximum": 3, "default": 1, "description": "Number of hops (1-3)." }
+      }
+    },
+    "waveAction": {
+      "type": "object",
+      "required": ["action", "who"],
+      "additionalProperties": false,
+      "description": "Waves hello or goodbye with the raised paw (at the animal's hand anchor).",
+      "properties": {
+        "action": { "const": "wave" },
+        "who": { "$ref": "#/$defs/id" },
+        "times": { "type": "integer", "minimum": 1, "maximum": 3, "default": 2, "description": "Number of waves (1-3)." }
+      }
+    },
+    "sayAction": {
+      "type": "object",
+      "required": ["action", "who", "text"],
+      "additionalProperties": false,
+      "description": "The character speaks one line; the timeline continues when speech ends (or after a time-out if speech is unavailable).",
+      "properties": {
+        "action": { "const": "say" },
+        "who": { "$ref": "#/$defs/id" },
+        "text": { "$ref": "#/$defs/spoken", "description": "The spoken line, e.g. \"Hi, Bo! Do you want to play?\"." }
+      }
+    },
+    "waitAction": {
+      "type": "object",
+      "required": ["action", "seconds"],
+      "additionalProperties": false,
+      "description": "A short pause (nobody moves).",
+      "properties": {
+        "action": { "const": "wait" },
+        "seconds": { "$ref": "#/$defs/seconds", "description": "Pause length, 0.2-5 seconds." }
+      }
+    }
+  }
+}

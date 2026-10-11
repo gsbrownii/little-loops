@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:little-loops:schema:robot-levels:1",
+  "title": "Little Loops - Robot Puzzles levels (robot-levels/1)",
+  "description": "Level pack for the Robot Puzzles activity of Little Loops, a coding game for children aged 4-7 who cannot read yet. A robot stands on a small square board; the child drags arrow cards (and, in later levels, repeat cards) into a command strip and presses Play; the robot then runs the cards in order, one cell per arrow. The level is solved the instant the robot ENTERS the goal (star) cell. Moving off the board or into an obstacle is blocked: the run stops there so the child can debug. The rules are implemented ONLY in js/modules/robot/logic.js (simulate, solve), and every pack must pass `node tools/validate-levels.mjs <file>`, which checks this schema plus rules a JSON Schema cannot express: (1) start, goal and every obstacle are different cells inside the grid; (2) the reference `solution` only uses cards from the level's `cards` palette (a {repeat: 2} block needs \"repeat2\", {repeat: 3} needs \"repeat3\"); (3) `solution` has at most `maxCards` top-level steps and every repeat body has at most `repeatCapacity` arrows; (4) running `solution` reaches the goal and its very LAST move is the one that enters the goal (no wasted trailing moves); (5) if the palette contains a repeat card, the level must be impossible with arrows alone within `maxCards` slots (i.e. maxCards is smaller than the shortest arrow-only path), unless `repeatOptional` is true; (6) `maxCards` should be the optimal card count or at most 2 more (warning otherwise); (7) the command strip must fit a 360 px-wide phone: measured in card widths (an arrow = 1, a repeat block = 1.4 + repeatCapacity, whatever is inside it), the reference `solution` should be at most 7 wide and a completely full strip (every slot a repeat block filled to repeatCapacity) at most 7 wide (warnings otherwise; checked only when the palette has a repeat card, since plain arrows wrap compactly). On small phones (360 px wide, or landscape with system bars) more than two repeat blocks make the strip scroll inside its box and shrink the board, so a level with a repeat card should have at most 2 slots (e.g. maxCards 2 with repeatCapacity 1 or 2); use 3 slots only when the level truly needs 3 cards (such as up, a loop across, down), accepting that the strip scrolls inside its box if the child makes all three of them repeat blocks. The main curriculum (data/robot/levels.json) additionally has exactly 15 levels r01..r15: r01-r09 teach sequencing (no obstacles, no repeat cards) and r10-r15 teach loops (each has at least one obstacle and at least one repeat card). Coordinates are [col, row] with [0, 0] the TOP-LEFT cell; arrows are absolute screen directions (\"up\" moves toward row 0) and the robot never turns.",
+  "type": "object",
+  "required": ["schema", "grid", "levels"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional editor hint pointing at this schema file (e.g. \"../../schemas/robot-levels.schema.json\"). Ignored by the game."
+    },
+    "schema": {
+      "const": "robot-levels/1",
+      "description": "Format identifier and version. Must be exactly \"robot-levels/1\"."
+    },
+    "grid": {
+      "$ref": "#/$defs/grid"
+    },
+    "levels": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 99,
+      "description": "Levels in play order. The child unlocks level N by solving level N-1. Difficulty should rise gently: few cards and one direction first, then mixed directions, then obstacles and repeat cards.",
+      "items": {
+        "$ref": "#/$defs/level"
+      }
+    }
+  },
+  "$defs": {
+    "grid": {
+      "type": "object",
+      "description": "Board size shared by every level in the pack. The game board, layout and art are designed and tested for 4 x 4 only, so both values must be 4.",
+      "required": ["cols", "rows"],
+      "additionalProperties": false,
+      "properties": {
+        "cols": {
+          "const": 4,
+          "description": "Number of columns (cells across). Must be 4."
+        },
+        "rows": {
+          "const": 4,
+          "description": "Number of rows (cells down). Must be 4."
+        }
+      }
+    },
+    "cell": {
+      "type": "array",
+      "description": "A board cell as [col, row]. [0, 0] is the TOP-LEFT cell, [3, 3] the bottom-right. col grows to the right, row grows downward. Both must be inside the grid (0..3 on a 4 x 4 board).",
+      "prefixItems": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3,
+          "description": "Column index, 0 = leftmost."
+        },
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3,
+          "description": "Row index, 0 = top row."
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2,
+      "examples": [[0, 3], [3, 0]]
+    },
+    "arrow": {
+      "type": "string",
+      "enum": ["up", "down", "left", "right"],
+      "description": "One move of one cell in an absolute screen direction: \"up\" = toward row 0, \"down\" = toward the last row, \"left\" = toward column 0, \"right\" = toward the last column. The robot never turns, so \"left\" always means screen-left."
+    },
+    "cardId": {
+      "type": "string",
+      "enum": ["up", "down", "left", "right", "repeat2", "repeat3"],
+      "description": "A palette card. Arrow cards are the four arrows. \"repeat2\" / \"repeat3\" are repeat (loop) blocks: placed in the strip they take one slot and hold up to repeatCapacity arrows that run 2 / 3 times in a row."
+    },
+    "repeatBlock": {
+      "type": "object",
+      "description": "A loop step: runs the arrows in `do` in order, then again, `repeat` times in total. Example: {\"repeat\": 3, \"do\": [\"right\", \"up\"]} moves right, up, right, up, right, up (a staircase). Counts as ONE top-level card. Repeat blocks cannot be nested.",
+      "required": ["repeat", "do"],
+      "additionalProperties": false,
+      "properties": {
+        "repeat": {
+          "type": "integer",
+          "enum": [2, 3],
+          "description": "How many times the body runs. 2 requires the palette card \"repeat2\", 3 requires \"repeat3\"."
+        },
+        "do": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "description": "The loop body: 1 to repeatCapacity arrows (never another repeat block). Every arrow used must also be in the level's `cards` palette.",
+          "items": {
+            "$ref": "#/$defs/arrow"
+          }
+        }
+      }
+    },
+    "step": {
+      "description": "One top-level card of a program: either a single arrow (one move) or a repeat block (one slot that runs its arrows several times).",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/arrow"
+        },
+        {
+          "$ref": "#/$defs/repeatBlock"
+        }
+      ]
+    },
+    "program": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "description": "A program, exactly as the child builds it in the command strip: top-level steps run left to right; repeat blocks expand in place. The run stops with success the moment the robot enters the goal; it stops early (to debug) when a move would leave the board or hit an obstacle; if the steps run out first the robot is 'short' of the goal. Example: [\"up\", {\"repeat\": 3, \"do\": [\"right\"]}, \"down\"] = up, right, right, right, down.",
+      "items": {
+        "$ref": "#/$defs/step"
+      },
+      "examples": [
+        ["right", "right", "up"],
+        [{ "repeat": 2, "do": ["up"] }, { "repeat": 3, "do": ["left"] }],
+        [{ "repeat": 3, "do": ["right", "up"] }]
+      ]
+    },
+    "obstacle": {
+      "type": "object",
+      "description": "A cell the robot cannot enter. A move into it is blocked: the robot stays put and the run stops on that card so the child can fix it. Never place one on the start or goal cell, never two on the same cell, and never wall the goal off completely.",
+      "required": ["at", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/cell",
+          "description": "Cell of the obstacle as [col, row]."
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["rock", "bush", "puddle"],
+          "description": "Picture drawn in the cell. All kinds block movement the same way; the difference is only visual, so mix them for variety."
+        }
+      }
+    },
+    "level": {
+      "type": "object",
+      "description": "One puzzle. Design rules for ages 4-7: keep it short and fair, vary start/goal positions, give the palette only the cards the level needs plus at most one distractor (later levels), set maxCards to the optimal card count or optimal + 1 (+2 at most), and in loop levels keep maxCards below the arrow-only path length so a repeat card is truly needed. Keep the command strip phone-sized: with a repeat card in the palette use at most 2 slots (3 only when the level truly needs 3 cards and repeatCapacity is 1), and prefer one two-arrow repeat block over two one-arrow blocks in the reference solution.",
+      "required": ["id", "start", "goal", "obstacles", "cards", "maxCards", "say", "solution"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,23}$",
+          "description": "Unique, stable id: lowercase letters, digits and dashes, starting with a letter. It is the save key for the child's progress (done.<id>), so never reuse or rename an id. The main curriculum uses r01..r15; generated packs should use their own prefix (e.g. \"g01\")."
+        },
+        "start": {
+          "$ref": "#/$defs/cell",
+          "description": "Cell where the robot starts every run, as [col, row]. Must differ from goal and from every obstacle."
+        },
+        "goal": {
+          "$ref": "#/$defs/cell",
+          "description": "Cell with the star, as [col, row]. Entering it solves the level immediately."
+        },
+        "obstacles": {
+          "type": "array",
+          "maxItems": 8,
+          "description": "Blocked cells (may be empty []). Sequencing levels use none; loop levels use them to force detours or to rule out shortcuts.",
+          "items": {
+            "$ref": "#/$defs/obstacle"
+          }
+        },
+        "cards": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "contains": {
+            "$ref": "#/$defs/arrow"
+          },
+          "description": "The palette: which card types the child may use (each is unlimited). At least one arrow; no duplicates. Order is the display order: list cards in the canonical order up, down, left, right, repeat2, repeat3 (skipping unused ones) so every card stays in the same place from level to level (the validator warns otherwise). Include \"repeat2\" and/or \"repeat3\" only in loop levels.",
+          "items": {
+            "$ref": "#/$defs/cardId"
+          },
+          "examples": [["right"], ["up", "left", "repeat2", "repeat3"]]
+        },
+        "maxCards": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8,
+          "description": "Number of top-level slots in the command strip (a repeat block uses ONE slot, whatever is inside it). Use the optimal card count, or optimal + 1 for some freedom. In loop levels it must be smaller than the number of arrows an arrow-only solution would need, so the repeat card is required, and should be at most 2 so the strip fits a 360 px-wide phone (3 only when the level truly needs 3 cards). Arrow-only levels may use up to 8 (plain arrows wrap compactly)."
+        },
+        "repeatCapacity": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3,
+          "default": 2,
+          "description": "How many arrow slots each repeat block in the strip has (1-3, default 2). Use 1 when repeat cards are first introduced; 2 for two-arrow loops such as a staircase [\"right\", \"up\"]. Only meaningful when the palette has a repeat card."
+        },
+        "repeatOptional": {
+          "type": "boolean",
+          "default": false,
+          "description": "Set true only if a repeat card is in the palette but the level is deliberately solvable with arrows alone. Normally omitted: the validator then requires that the level cannot be solved without a repeat card."
+        },
+        "say": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 110,
+          "pattern": "\\S",
+          "description": "Spoken introduction (text-to-speech) played when the level opens and on the replay button. The child cannot read, so this is the only instruction that can be replayed: one to three short, warm sentences, at most 15 simple words in total, that a 4-year-old understands (never empty or whitespace-only). The game adds no explanations of its own, so the FIRST level that uses a new card, a new obstacle kind or a new idea must explain it here and say what to DO with it (e.g. \"New arrow! The up arrow makes the robot go up.\", \"Put the arrow inside the repeat card. It goes three times! Rocks block the way.\" or \"New! Put two arrows inside one repeat card to climb the stairs!\"). No symbols or emoji."
+        },
+        "hint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 110,
+          "pattern": "\\S",
+          "description": "Optional spoken hint, played after two misses while sparkly dots show the path of `solution` on the board. One short sentence (at most 15 words), encouraging, never scolding. If omitted the game says a generic hint."
+        },
+        "solution": {
+          "$ref": "#/$defs/program",
+          "description": "Reference program that solves the level, using only palette cards, at most maxCards top-level steps, repeat bodies of at most repeatCapacity arrows, and whose LAST move enters the goal. Its path is drawn as the hint, so prefer the most natural solution a child would find."
+        }
+      }
+    }
+  }
+}

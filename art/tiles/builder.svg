@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Home tile: Builder. A tower of stacked toy blocks with a big gear turning behind it.
+       Original art for Little Loops. Transparent background (the tile colour shows through). -->
+  <g stroke="#2B2D42" stroke-linecap="round" stroke-linejoin="round">
+    <!-- gear -->
+    <path d="M141.3 35.7 L142.6 25.3 L153.4 25.3 L154.7 35.7 A33 33 0 0 1 166.1 40.4 L174.3 34 L182 41.7 L175.6 49.9 A33 33 0 0 1 180.3 61.3 L190.7 62.6 L190.7 73.4 L180.3 74.7 A33 33 0 0 1 175.6 86.1 L182 94.3 L174.3 102 L166.1 95.6 A33 33 0 0 1 154.7 100.3 L153.4 110.7 L142.6 110.7 L141.3 100.3 A33 33 0 0 1 129.9 95.6 L121.7 102 L114 94.3 L120.4 86.1 A33 33 0 0 1 115.7 74.7 L105.3 73.4 L105.3 62.6 L115.7 61.3 A33 33 0 0 1 120.4 49.9 L114 41.7 L121.7 34 L129.9 40.4 A33 33 0 0 1 141.3 35.7 Z" fill="#FF9F1C" stroke-width="5"/>
+    <circle cx="148" cy="68" r="12" fill="#FFF6E5" stroke-width="4.5"/>
+    <!-- roof -->
+    <path d="M44 63 L78 21 L112 63 Z" fill="#9B5DE5" stroke-width="5"/>
+    <circle cx="78" cy="48" r="7" fill="#FFFFFF" stroke-width="3.5"/>
+    <!-- middle block -->
+    <rect x="47" y="64" width="62" height="62" rx="9" fill="#FFD166" stroke-width="5"/>
+    <path d="M78 81 L94 108 H62 Z" fill="#FFFFFF" stroke-width="4"/>
+    <!-- bottom blocks -->
+    <rect x="14" y="128" width="62" height="62" rx="9" fill="#FF6B6B" stroke-width="5"/>
+    <circle cx="45" cy="159" r="14" fill="#FFFFFF" stroke-width="4"/>
+    <rect x="80" y="128" width="62" height="62" rx="9" fill="#4CC9F0" stroke-width="5"/>
+    <polygon points="111,144 114.8,153.7 125.3,154.4 117.2,161 119.8,171.1 111,165.5 102.2,171.1 104.8,161 96.7,154.4 107.2,153.7" fill="#FFFFFF" stroke-width="4"/>
+    <!-- a little ball waiting to be used -->
+    <circle cx="170" cy="171" r="19" fill="#9B5DE5" stroke-width="5"/>
+    <path d="M161 164 Q165 158 172 158" fill="none" stroke="#FFFFFF" stroke-width="4" opacity="0.8"/>
+  </g>
+</svg>

@@ -1,0 +1,344 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:little-loops:schema:coloring-parts:1",
+  "title": "Little Loops - Coloring line art parts (coloring-parts/1)",
+  "description": "Line art for the Coloring activity of Little Loops, a game for children aged 4-7 who cannot read yet. A child builds a picture in three taps - an ANIMAL, an ACCESSORY it wears or holds, and a BACKGROUND place - then taps closed areas (regions) to fill them with color, or a grown-up prints the clean outline. There are exactly three files, one per kind, all in this format: data/coloring/animals.json (kind \"animal\"), data/coloring/accessories.json (kind \"accessory\"), data/coloring/backgrounds.json (kind \"background\"). The app loads only these three files; to add art, append items to them. Every part is a flat list of simple SVG shapes rendered ONLY by js/modules/coloring/scene.js (renderScene), which sanitizes everything (numbers coerced, path data whitelisted), so content can never inject markup. COORDINATES (SVG convention: origin top-left, x grows right, y grows DOWN): backgrounds draw directly in the 600 x 600 scene; animals draw in their own 300 x 300 animal box, which `placement` puts into the scene (the shipped animals.json places the box at scene x 120..480, y 210..570, the 'stage box'; default if placement is omitted: x 150..450, y 270..570); accessories draw around their attach point (0, 0) and are placed at the animal's matching anchor (anchor coordinates are in the animal box) with the anchor's scale and rotate. Outlines are drawn by the renderer at one constant thickness (5 scene units) for every layer and scale - never draw outlines as filled shapes. Style for ages 4-7: chunky closed shapes, big regions (aim for at least ~22 units across, never under 16), few details, no text or letters, no logos, no copyrighted or trademarked characters. Every file must pass `node tools/validate-art.mjs`, which also checks things this schema cannot: path syntax, closed region outlines, unique region ids, bounding boxes (backgrounds inside 0..600, animals inside their 300 box, anchors inside the animal box, every animal x accessory combination inside the scene), and regions too small for fingers.",
+  "type": "object",
+  "required": ["schema", "kind", "items"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional editor hint pointing at this schema file (e.g. \"../../schemas/coloring-parts.schema.json\"). Ignored by the app."
+    },
+    "schema": {
+      "const": "coloring-parts/1",
+      "description": "Format identifier and version. Must be exactly \"coloring-parts/1\"."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["animal", "accessory", "background"],
+      "description": "What every item in this file is. Must match the file: animals.json -> \"animal\", accessories.json -> \"accessory\", backgrounds.json -> \"background\"."
+    },
+    "placement": {
+      "$ref": "#/$defs/placement"
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 24,
+      "description": "The parts, in the order the picker shows them (one big picture tile each). The picker is designed and tested for exactly 6 per file (the validator warns otherwise). Item ids must be unique within the file."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "animal" } }, "required": ["kind"] },
+      "then": { "properties": { "items": { "items": { "$ref": "#/$defs/animal" } } } }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "accessory" } }, "required": ["kind"] },
+      "then": {
+        "properties": { "items": { "items": { "$ref": "#/$defs/accessory" } } },
+        "not": { "required": ["placement"] }
+      }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "background" } }, "required": ["kind"] },
+      "then": {
+        "properties": { "items": { "items": { "$ref": "#/$defs/background" } } },
+        "not": { "required": ["placement"] }
+      }
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "maxLength": 40,
+      "description": "Stable identifier: lowercase letters, digits and dashes, starting with a letter or digit (e.g. \"cat\", \"party-hat\", \"snowy\"). Saved pictures refer to parts by id, so never rename or reuse an id once published."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "pattern": "^[^<>{}]*[^<>{}\\s][^<>{}]*$",
+      "description": "Short human name for grown-ups and screen readers (the tile's aria-label), e.g. \"Party hat\". Children never need to read it."
+    },
+    "say": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 110,
+      "pattern": "^[^<>{}]*[^<>{}\\s][^<>{}]*$",
+      "description": "Spoken (text-to-speech) when the child taps this part's tile: a short, cheerful phrase of at most ~6 simple words, e.g. \"A cute kitty cat!\", \"A sunny meadow!\". Max 110 characters (hard limit: speech gets cut off); keep it to 15 words or fewer (the validator warns above 15). No symbols, emoji or markup. If omitted the app says \"<name>!\" (the validator warns)."
+    },
+    "placement": {
+      "type": "object",
+      "description": "ANIMALS FILE ONLY (forbidden in the other two). Where the 300 x 300 animal box is drawn inside the 600 x 600 scene, for every animal: (x, y) = scene position of the box's top-left corner, scale = size factor (box side in the scene = 300 * scale). Shipped value: {\"x\": 120, \"y\": 210, \"scale\": 1.2}, i.e. the stage box covers scene x 120..480, y 210..570 (360 units tall) - centered horizontally with the feet about 30 units above the bottom edge. If omitted the renderer uses {\"x\": 150, \"y\": 270, \"scale\": 1} (x 150..450, y 270..570). Keep the whole box inside the scene.",
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number", "default": 150, "description": "Scene x of the animal box's left edge." },
+        "y": { "type": "number", "default": 270, "description": "Scene y of the animal box's top edge." },
+        "scale": { "type": "number", "exclusiveMinimum": 0, "default": 1, "description": "Size factor for the animal box (and everything attached to it). 1 = 300 scene units." }
+      }
+    },
+    "anchorName": {
+      "type": "string",
+      "enum": ["head", "eyes", "neck", "hand"],
+      "description": "An attachment point every animal provides. head = top of the head (hats, crowns); eyes = between the eyes (glasses); neck = under the chin (bow ties, scarves); hand = the grip point of the raised paw on the right side of the picture (balloons, ice creams, flags)."
+    },
+    "anchor": {
+      "type": "object",
+      "required": ["x", "y"],
+      "additionalProperties": false,
+      "description": "Where an accessory attaches to this animal, in ANIMAL-BOX coordinates (0..300). The accessory's own point (0, 0) is put at (x, y), then rotated by `rotate` and scaled by `scale` around that point.",
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 300, "description": "Animal-box x of the attach point (0..300)." },
+        "y": { "type": "number", "minimum": 0, "maximum": 300, "description": "Animal-box y of the attach point (0..300, y grows downward)." },
+        "scale": { "type": "number", "exclusiveMinimum": 0, "default": 1, "description": "Size of accessories at this anchor relative to their reference size. Typical values: head 0.85-0.95 (reference hats are ~90 wide), eyes = (distance between the animal's two eye centers) / 48 because reference glasses have lens centers at x = -24 and +24, neck ~1.15, hand ~1.1. The validator warns outside 0.25..4." },
+        "rotate": { "type": "number", "minimum": -180, "maximum": 180, "default": 0, "description": "Optional tilt in degrees, positive = clockwise on screen, around the attach point (e.g. -10 for a hat tipped to the left on a tilted head). Usually omitted." }
+      }
+    },
+    "anchors": {
+      "type": "object",
+      "required": ["head", "eyes", "neck", "hand"],
+      "additionalProperties": false,
+      "description": "All four attach points are required, so every accessory fits every animal.",
+      "properties": {
+        "head": { "$ref": "#/$defs/anchor", "description": "Bottom-center of where a hat sits: horizontally centered on the head, at the top of the skull (between the ears), e.g. {\"x\": 150, \"y\": 56, \"scale\": 0.9}. Head accessories are drawn with their bottom-center at (0, 0) and rise upward." },
+        "eyes": { "$ref": "#/$defs/anchor", "description": "Midpoint between the centers of the two eyes, e.g. {\"x\": 150, \"y\": 110, \"scale\": 1.167} for eyes at x 122 and 178 (56 apart / 48)." },
+        "neck": { "$ref": "#/$defs/anchor", "description": "Center of the neck, just under the chin where head meets body, e.g. {\"x\": 150, \"y\": 184, \"scale\": 1.15}. Neck accessories are centered on (0, 0), about 70 wide x 40 tall at scale 1." },
+        "hand": { "$ref": "#/$defs/anchor", "description": "The grip point of the raised paw on the picture's right side (where a balloon string or cone is held), e.g. {\"x\": 250, \"y\": 166, \"scale\": 1.1}. Hand accessories extend mostly upward from (0, 0), up to ~170 units tall, so leave room above the paw." }
+      }
+    },
+    "viewBox": {
+      "type": "array",
+      "description": "Optional frame [minX, minY, width, height] for drawing this accessory on its own (renderPart in scene.js). Default [-110, -110, 220, 220]. The picker shows accessories on the chosen animal, so this is rarely needed.",
+      "prefixItems": [
+        { "type": "number", "description": "minX" },
+        { "type": "number", "description": "minY" },
+        { "type": "number", "exclusiveMinimum": 0, "description": "width" },
+        { "type": "number", "exclusiveMinimum": 0, "description": "height" }
+      ],
+      "items": false,
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "shapes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "contains": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": { "kind": { "const": "region" } }
+      },
+      "description": "The drawing as simple shapes, painted in array order (later shapes on top). At least one must be a fillable region. Put large back regions first (tail, body), then front regions (belly, head, ears), then line details, then ink (pupils, nose) and finally white highlights. A region drawn on top of another covers it: the covered part can no longer be tapped. Aim for 10-25 regions per part and under 100 shapes in total (the validator warns above 100, errors above 200).",
+      "items": { "$ref": "#/$defs/shape" }
+    },
+    "shapeKind": {
+      "type": "string",
+      "enum": ["region", "line", "ink", "white"],
+      "description": "How the shape is painted. region = a closed area the child taps to fill (starts white with a dark outline; use for everything a child would want to color). line = outline/detail stroke only, never filled, taps pass through to the region below (whiskers, smiles, fur marks, strings, waves). ink = solid dark fill (#2B2D42 on screen, pure black in print) for pupils, noses, buttons; not fillable. white = solid white with no outline, for eye shine and highlights (put it after the ink shape it sits on)."
+    },
+    "lineKind": {
+      "type": "string",
+      "enum": ["line", "ink"],
+      "description": "A line or polyline has no inside, so it cannot be a fillable region (and \"white\" would be invisible). Use \"line\" (normal) or \"ink\"."
+    },
+    "shapeId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "maxLength": 40,
+      "description": "Name of a region, unique within this part (e.g. \"belly\", \"ear-left\", \"sky\"). Saved colors are stored under \"<layer>:<partId>:<id>\" (layer = bg, animal or acc), so give EVERY region an id and keep it stable when editing the art; without one the shape's array index is used and reordering shapes scrambles saved pictures (the validator warns). Optional and unused on non-region shapes."
+    },
+    "w": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 3,
+      "description": "Optional outline width multiplier (1 = the standard 5-unit outline). Use 0.6-0.8 for fine details (whiskers, fur marks, strings), 1.2-1.5 for emphasis. Omit for normal outlines."
+    },
+    "coord": {
+      "type": "number",
+      "description": "A coordinate in the part's own system (scene 0..600 for backgrounds, animal box 0..300 for animals, attach-point-relative for accessories). Round to at most 1-2 decimals."
+    },
+    "size": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "A length greater than 0 in the part's own units."
+    },
+    "shape": {
+      "type": "object",
+      "required": ["type", "kind"],
+      "description": "One SVG primitive. `type` picks the geometry fields; `kind` picks how it is painted. Only the fields listed for that type are allowed. Numbers must be JSON numbers (not strings).",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["path", "circle", "ellipse", "rect", "polygon", "polyline", "line"],
+          "description": "Geometry: path (d), circle (cx cy r), ellipse (cx cy rx ry), rect (x y width height [rx]), polygon (points, closed), polyline (points, open), line (x1 y1 x2 y2). Prefer circle/ellipse/rect/polygon for simple forms and path for organic outlines."
+        }
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "const": "path" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/pathShape" } },
+        { "if": { "properties": { "type": { "const": "circle" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/circleShape" } },
+        { "if": { "properties": { "type": { "const": "ellipse" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/ellipseShape" } },
+        { "if": { "properties": { "type": { "const": "rect" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/rectShape" } },
+        { "if": { "properties": { "type": { "const": "polygon" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/polygonShape" } },
+        { "if": { "properties": { "type": { "const": "polyline" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/polylineShape" } },
+        { "if": { "properties": { "type": { "const": "line" } }, "required": ["type"] }, "then": { "$ref": "#/$defs/lineShape" } }
+      ]
+    },
+    "pathShape": {
+      "type": "object",
+      "required": ["type", "kind", "d"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "path" },
+        "kind": { "$ref": "#/$defs/shapeKind" },
+        "id": { "$ref": "#/$defs/shapeId" },
+        "w": { "$ref": "#/$defs/w" },
+        "d": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 8000,
+          "pattern": "^\\s*[Mm][MmLlHhVvCcSsQqTtAaZz0-9eE.,+\\-\\s]*$",
+          "description": "SVG path data using ONLY the commands M L H V C S Q T A Z (upper case = absolute, lower case = relative), numbers, spaces and commas - no other characters. Must start with M. For a region, close every outline with Z. Example: \"M72 110 L82 26 Q85 6 103 15 L144 50 Z\". Max 8000 characters; simplify long outlines."
+        }
+      }
+    },
+    "circleShape": {
+      "type": "object",
+      "required": ["type", "kind", "cx", "cy", "r"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "circle" },
+        "kind": { "$ref": "#/$defs/shapeKind" },
+        "id": { "$ref": "#/$defs/shapeId" },
+        "w": { "$ref": "#/$defs/w" },
+        "cx": { "$ref": "#/$defs/coord", "description": "Center x." },
+        "cy": { "$ref": "#/$defs/coord", "description": "Center y." },
+        "r": { "$ref": "#/$defs/size", "description": "Radius (> 0)." }
+      }
+    },
+    "ellipseShape": {
+      "type": "object",
+      "required": ["type", "kind", "cx", "cy", "rx", "ry"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "ellipse" },
+        "kind": { "$ref": "#/$defs/shapeKind" },
+        "id": { "$ref": "#/$defs/shapeId" },
+        "w": { "$ref": "#/$defs/w" },
+        "cx": { "$ref": "#/$defs/coord", "description": "Center x." },
+        "cy": { "$ref": "#/$defs/coord", "description": "Center y." },
+        "rx": { "$ref": "#/$defs/size", "description": "Horizontal radius (> 0)." },
+        "ry": { "$ref": "#/$defs/size", "description": "Vertical radius (> 0)." }
+      }
+    },
+    "rectShape": {
+      "type": "object",
+      "required": ["type", "kind", "x", "y", "width", "height"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "rect" },
+        "kind": { "$ref": "#/$defs/shapeKind" },
+        "id": { "$ref": "#/$defs/shapeId" },
+        "w": { "$ref": "#/$defs/w" },
+        "x": { "$ref": "#/$defs/coord", "description": "Left edge." },
+        "y": { "$ref": "#/$defs/coord", "description": "Top edge." },
+        "width": { "$ref": "#/$defs/size", "description": "Width (> 0)." },
+        "height": { "$ref": "#/$defs/size", "description": "Height (> 0)." },
+        "rx": { "type": "number", "minimum": 0, "description": "Optional corner radius (0 = sharp corners). Rounded corners look friendlier." }
+      }
+    },
+    "polygonShape": {
+      "type": "object",
+      "required": ["type", "kind", "points"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "polygon" },
+        "kind": { "$ref": "#/$defs/shapeKind" },
+        "id": { "$ref": "#/$defs/shapeId" },
+        "w": { "$ref": "#/$defs/w" },
+        "points": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000,
+          "pattern": "^[0-9eE.,+\\-\\s]+$",
+          "description": "At least 3 x,y pairs (automatically closed), only numbers, spaces and commas, e.g. \"0,380 120,300 260,360 0,420\"."
+        }
+      }
+    },
+    "polylineShape": {
+      "type": "object",
+      "required": ["type", "kind", "points"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "polyline" },
+        "kind": { "$ref": "#/$defs/lineKind" },
+        "id": { "$ref": "#/$defs/shapeId" },
+        "w": { "$ref": "#/$defs/w" },
+        "points": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000,
+          "pattern": "^[0-9eE.,+\\-\\s]+$",
+          "description": "At least 2 x,y pairs of an OPEN line (never filled), only numbers, spaces and commas, e.g. \"10,20 30,10 50,20\"."
+        }
+      }
+    },
+    "lineShape": {
+      "type": "object",
+      "required": ["type", "kind", "x1", "y1", "x2", "y2"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "line" },
+        "kind": { "$ref": "#/$defs/lineKind" },
+        "id": { "$ref": "#/$defs/shapeId" },
+        "w": { "$ref": "#/$defs/w" },
+        "x1": { "$ref": "#/$defs/coord", "description": "Start x." },
+        "y1": { "$ref": "#/$defs/coord", "description": "Start y." },
+        "x2": { "$ref": "#/$defs/coord", "description": "End x." },
+        "y2": { "$ref": "#/$defs/coord", "description": "End y." }
+      }
+    },
+    "animal": {
+      "type": "object",
+      "required": ["id", "name", "anchors", "shapes"],
+      "additionalProperties": false,
+      "description": "A friendly animal drawn in its own 300 x 300 box (0..300 on both axes, y down), facing the viewer, standing with its feet near y 285-295 and centered on x 150, with its right-hand paw (picture right, near x 250, y 165) raised to hold things. Keep the animal itself inside the box (hats and balloons may rise above it: the scene has ~210 units of headroom above the stage box at the shipped placement). All four anchors are required.",
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "$ref": "#/$defs/name" },
+        "say": { "$ref": "#/$defs/say" },
+        "anchors": { "$ref": "#/$defs/anchors" },
+        "shapes": { "$ref": "#/$defs/shapes" }
+      }
+    },
+    "accessory": {
+      "type": "object",
+      "required": ["id", "name", "anchor", "shapes"],
+      "additionalProperties": false,
+      "description": "Something an animal wears or holds, drawn around its attach point (0, 0) at a reference size that fits every animal (the animal's anchor scale adapts it). Conventions by anchor - head: bottom-center at (0, 0), about 90 wide, rising to about y -90 (so it sits ON the head); eyes: two lenses centered at x -24 and +24 on y 0, about 42 wide each; neck: centered on (0, 0), about 70 wide x 40 tall; hand: (0, 0) is the grip point, drawn mostly upward (up to ~170 tall). Draw within ~110 units of (0, 0).",
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "$ref": "#/$defs/name" },
+        "say": { "$ref": "#/$defs/say" },
+        "anchor": { "$ref": "#/$defs/anchorName" },
+        "viewBox": { "$ref": "#/$defs/viewBox" },
+        "shapes": { "$ref": "#/$defs/shapes" }
+      }
+    },
+    "background": {
+      "type": "object",
+      "required": ["id", "name", "shapes"],
+      "additionalProperties": false,
+      "description": "A place, drawn directly in the 600 x 600 scene (y down). Start with a full-size backdrop region (e.g. rect 0,0,600,600 \"sky\") so the whole picture is colorable, then big ground/water shapes, then a few chunky details near the edges and top. The animal covers the stage box (x 120..480, y 210..570 with the shipped placement): keep that area simple (open ground), because background regions hidden behind the animal cannot be tapped. Shapes may extend past the scene edge (they are clipped) but details and small regions should stay inside.",
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "$ref": "#/$defs/name" },
+        "say": { "$ref": "#/$defs/say" },
+        "shapes": { "$ref": "#/$defs/shapes" }
+      }
+    }
+  }
+}

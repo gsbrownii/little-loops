@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:little-loops:schema:app-registry:1",
+  "title": "Little Loops - module registry (app-registry/1)",
+  "description": "data/app.json: the list of activities (modules) shown as picture tiles on the Little Loops home screen, in display order: \"ready\" modules as big tiles, \"locked\" ones as smaller \"coming soon\" tiles in a row underneath. js/app.js reads it at start-up: tapping a \"ready\" tile routes to #/<id>, lazy-loads `entry` (an ES module whose default export implements the module contract in docs/ARCHITECTURE.md: { id, mount(root, ctx), unmount?, settings? }) and `css`; tapping a \"locked\" tile wobbles it and speaks `lockedSay`. All paths are RELATIVE to index.html (no leading slash, no ..), so the app works from a GitHub Pages sub-path. Checked by `node tools/validate.mjs`, which also verifies what a schema cannot: ids are unique, and every referenced file exists. After changing this file or adding module files, run `node tools/precache.mjs` so the offline cache includes them.",
+  "type": "object",
+  "required": ["schema", "modules"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional editor hint pointing at this schema file (e.g. \"../schemas/app-registry.schema.json\"). Ignored by the app."
+    },
+    "schema": {
+      "const": "app-registry/1",
+      "description": "Format identifier and version. Must be exactly \"app-registry/1\"."
+    },
+    "modules": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "description": "Home tiles in display order (js/app.js showHome). Ready modules become big picture tiles: 2 per row in portrait (an odd last tile spans the whole row), all in one row in landscape. Locked modules become smaller \"coming soon\" tiles in one row underneath. Each group keeps the order of this list. Designed for up to 4 ready and up to 4 locked modules (the validator warns above that; tiles get small on phones); at most 8 in total; at least one must be ready; ids must be unique.",
+      "contains": { "type": "object", "required": ["status"], "properties": { "status": { "const": "ready" } } },
+      "items": { "$ref": "#/$defs/module" }
+    }
+  },
+  "$defs": {
+    "relPath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^(?!/)(?!.*\\.\\.)(?!.*:)[A-Za-z0-9._/-]+$",
+      "description": "A file path relative to index.html using forward slashes, e.g. \"js/modules/robot/robot.js\". No leading slash, no \"..\", no URL scheme, no backslashes: the app is served from a sub-path and works offline, so it may only load its own files."
+    },
+    "module": {
+      "type": "object",
+      "required": ["id", "title", "status", "tile"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "maxLength": 24,
+          "not": { "const": "settings" },
+          "description": "Stable module id: lowercase letters, digits, dashes, starting with a letter. Used as the route (#/<id>), the CSS class on the module root (mod-<id>), the localStorage scope for progress (<id>.<key>) and by convention the folder js/modules/<id>/. Never rename it once published (progress would be lost). \"settings\" is reserved for the grown-up settings route. Examples: \"robot\", \"coloring\", \"story\", \"builder\"."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 30,
+          "description": "Name shown under the tile (for grown-ups; children recognize the picture) and used as its accessible label, e.g. \"Robot Puzzles\"."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["ready", "locked"],
+          "description": "\"ready\" = playable: the tile opens the module, so `entry` is required. \"locked\" = coming soon: grayed tile with a lock badge; tapping it plays a gentle sound and speaks `lockedSay`; entry/css are ignored (they may be pre-filled while the module is being built)."
+        },
+        "entry": {
+          "allOf": [{ "$ref": "#/$defs/relPath" }, { "pattern": "\\.m?js$" }],
+          "description": "The module's JavaScript entry (ES module with a default export implementing the module contract), e.g. \"js/modules/story/story.js\". Required when status is \"ready\"."
+        },
+        "css": {
+          "allOf": [{ "$ref": "#/$defs/relPath" }, { "pattern": "\\.css$" }],
+          "description": "Optional stylesheet loaded (once) together with the entry, e.g. \"js/modules/story/story.css\"."
+        },
+        "lockedSay": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 110,
+          "pattern": "^[^<>{}]*[^<>{}\\s][^<>{}]*$",
+          "description": "Spoken when a locked tile is tapped, e.g. \"Story Movie is coming soon!\". One short, warm sentence in US English: max 110 characters; keep it to 15 simple words or fewer (the validator warns above 15). No symbols, emoji or markup (< > { } and emoji are errors). If omitted the app says \"<title> is coming soon!\"."
+        },
+        "tile": {
+          "type": "object",
+          "required": ["art", "color"],
+          "additionalProperties": false,
+          "description": "The home tile's look.",
+          "properties": {
+            "art": {
+              "allOf": [{ "$ref": "#/$defs/relPath" }, { "pattern": "\\.(svg|png|webp)$" }],
+              "description": "Square picture for the tile, ideally an original SVG under art/tiles/ (e.g. \"art/tiles/story.svg\"): bright, simple, no text, no copyrighted characters."
+            },
+            "color": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "description": "Tile background color as #RRGGBB, bright and clearly different from the other tiles' colors (e.g. \"#4CC9F0\")."
+            }
+          }
+        }
+      },
+      "if": { "properties": { "status": { "const": "ready" } }, "required": ["status"] },
+      "then": { "required": ["entry"] }
+    }
+  }
+}

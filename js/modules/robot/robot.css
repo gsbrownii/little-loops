@@ -1,0 +1,567 @@
+/* Robot Puzzles — styles. Class prefix "rb-" (cards are also used as drag ghosts on <body>,
+   so card styles are not nested under .mod-robot). Sizes: every card/slot/button >= 64px. */
+
+.mod-robot {
+  --card: clamp(64px, 10vmin, 96px);
+  --rb-gap: 8px;
+  --rb-radius: 18px;
+  --rb-glow: #FF9F1C;
+  --rb-run: #9B5DE5;
+  overflow: hidden;
+}
+
+/* ================= Level select ================= */
+
+.rb-select {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  padding: 22px var(--gutter) 20px; /* room for the robot peeking over the next button */
+}
+.rb-levels {
+  --s: 96px;
+  --gap: 16px;
+  margin: auto;
+  display: grid;
+  gap: var(--gap);
+  justify-content: center;
+}
+.rb-lvl {
+  position: relative;
+  width: var(--s);
+  height: var(--s);
+  min-width: var(--tap);
+  min-height: var(--tap);
+  border-radius: 26%;
+  display: grid;
+  place-items: center;
+  background: #4CC9F0;
+  color: var(--ink);
+  box-shadow: 0 6px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 4px var(--ink);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.rb-lvl[data-kind="loop"] { background: #B58CF5; }
+.rb-lvl[data-state="done"] { background: #7FE0B5; }
+.rb-lvl[data-state="done"][data-kind="loop"] { background: #CDB4F7; }
+.rb-lvl[data-state="locked"] {
+  background: #DCEFF7;
+  color: rgba(43, 45, 66, 0.38);
+  box-shadow: 0 6px 0 rgba(43, 45, 66, 0.12), inset 0 0 0 4px rgba(43, 45, 66, 0.35);
+}
+.rb-lvl[data-state="locked"][data-kind="loop"] { background: #E9E0F8; }
+.rb-lvl:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 4px var(--ink); }
+.rb-lvl-num {
+  font-size: calc(var(--s) * 0.42);
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.6);
+}
+.rb-lvl-star, .rb-lvl-lock, .rb-lvl-loop {
+  position: absolute;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+}
+.rb-lvl-star {
+  right: -8%;
+  top: -8%;
+  width: 38%;
+  height: 38%;
+  color: #FFD166;
+}
+.rb-lvl-star .icon { overflow: visible; }
+.rb-lvl-star .icon polygon { stroke: var(--ink); stroke-width: 3.5; }
+.rb-lvl-lock {
+  right: 8%;
+  bottom: 8%;
+  width: 30%;
+  height: 30%;
+  padding: 5%;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 3px var(--ink);
+}
+.rb-lvl-loop { left: 7%; bottom: 7%; width: 30%; height: 30%; }
+.rb-lvl-loop svg { width: 100%; height: 100%; }
+.rb-lvl-robot {
+  position: absolute;
+  left: -12%;
+  top: -20%;
+  width: 52%;
+  height: 52%;
+  pointer-events: none;
+  animation: bob 1.6s ease-in-out infinite;
+}
+.rb-lvl.is-next { animation: pulse 1.4s ease-in-out infinite; }
+
+/* ================= Top bar badge ================= */
+
+/* Clear (trash) sits next to Back; the level number is a bonus for grown-ups on wider screens. */
+.rb-lvl-badge {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--yellow);
+  color: var(--ink);
+  font-weight: 900;
+  font-size: 22px;
+  box-shadow: inset 0 0 0 4px var(--ink);
+}
+@media (max-width: 559px) {
+  .rb-lvl-badge { display: none; }
+}
+.rb-clear.is-off { opacity: 0.45; }
+
+/* ================= Puzzle layout ================= */
+
+.rb-puzzle {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  column-gap: 14px;
+  padding: 2px var(--gutter) 12px;
+}
+.rb-puzzle.is-landscape { flex-direction: row; align-items: center; }
+
+.rb-board-wrap {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rb-puzzle.is-landscape .rb-board-wrap { align-self: stretch; }
+
+/* Strip on top, palette below; Play at the end of the palette row (default), at the end of
+   the strip row (.is-play-strip) or on its own row (.is-play-below): puzzle.js picks the one
+   that leaves the biggest board. */
+.rb-controls {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "strip strip" "pal play";
+  align-items: center;
+  gap: 10px;
+}
+.rb-controls.is-play-strip { grid-template-areas: "strip play" "pal pal"; }
+.rb-controls.is-play-below { grid-template-columns: minmax(0, 1fr); grid-template-areas: "strip" "pal" "play"; }
+.rb-controls.is-play-below > .rb-play { justify-self: center; }
+.rb-controls > .rb-strip { grid-area: strip; }
+.rb-controls > .rb-palette { grid-area: pal; }
+.rb-controls > .rb-play { grid-area: play; }
+.rb-puzzle.is-landscape .rb-controls { max-height: 100%; }
+.rb-controls.is-tight { overflow-y: auto; overscroll-behavior: contain; padding-bottom: 8px; }
+
+/* ================= Board ================= */
+
+.rb-board {
+  position: relative;
+  flex: 0 0 auto;
+  width: 240px;
+  height: 240px;
+  border-radius: 22px;
+  border: 5px solid var(--ink);
+  background: #F3FBFF;
+  box-shadow: 0 6px 0 rgba(43, 45, 66, 0.2);
+}
+.rb-cells {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  grid-template-rows: repeat(var(--rows), 1fr);
+  border-radius: 17px;
+  overflow: hidden;
+}
+.rb-cell { background: #F3FBFF; box-shadow: inset 0 0 0 1px rgba(42, 155, 192, 0.12); }
+.rb-cell.is-alt { background: #D9F1FB; }
+.rb-layer { position: absolute; inset: 0; pointer-events: none; }
+.rb-piece {
+  position: absolute;
+  width: calc(100% / var(--cols));
+  height: calc(100% / var(--rows));
+}
+.rb-piece > svg { display: block; width: 100%; height: 100%; }
+.rb-obstacle > svg { width: 92%; height: 92%; margin: 4%; }
+.rb-star { z-index: 2; }
+.rb-star > svg { width: 88%; height: 88%; margin: 6%; animation: rb-twinkle 2.4s ease-in-out infinite; }
+.rb-star.is-hinted > svg { animation: rb-twinkle 0.9s ease-in-out infinite; filter: drop-shadow(0 0 6px #FFD166); }
+.rb-star.is-collected > svg { animation: rb-collect 0.75s ease-out forwards; }
+@keyframes rb-twinkle {
+  0%, 100% { transform: scale(1) rotate(0); }
+  50% { transform: scale(1.08) rotate(6deg); }
+}
+@keyframes rb-collect {
+  0% { transform: scale(1); opacity: 1; }
+  45% { transform: scale(1.55) rotate(25deg); opacity: 1; }
+  100% { transform: scale(0.2) rotate(90deg) translateY(-60%); opacity: 0; }
+}
+
+.rb-robot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 4;
+  width: calc(100% / var(--cols));
+  height: calc(100% / var(--rows));
+  transition: transform 0.42s cubic-bezier(0.45, 0.05, 0.3, 1.15);
+  will-change: transform;
+}
+.rb-robot-body { width: 100%; height: 100%; display: grid; place-items: center; }
+.rb-robot-img { width: 90%; height: 90%; display: block; filter: drop-shadow(0 3px 0 rgba(43, 45, 66, 0.25)); }
+
+.rb-hint-layer { position: absolute; inset: 0; z-index: 1; opacity: 0; transition: opacity 0.4s ease; }
+.rb-hint-layer.is-on { opacity: 1; }
+.rb-hint { width: 100%; height: 100%; display: block; overflow: visible; }
+.rb-hint-dot { transform-box: fill-box; transform-origin: center; animation: rb-sparkle 1.4s ease-in-out infinite; }
+@keyframes rb-sparkle {
+  0%, 100% { transform: scale(0.85); opacity: 0.8; }
+  50% { transform: scale(1.25); opacity: 1; }
+}
+
+.rb-board-fx { position: absolute; inset: 0; z-index: 5; }
+.rb-bonk > svg { width: 70%; height: 70%; margin: 15%; animation: rb-bonk 1.4s ease-out forwards; }
+@keyframes rb-bonk {
+  0% { transform: scale(0.2); opacity: 0; }
+  20% { transform: scale(1.15); opacity: 1; }
+  70% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0; }
+}
+
+/* ================= Cards ================= */
+
+.rb-card {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--card, 64px);
+  height: var(--card, 64px);
+  min-width: 64px;
+  min-height: 64px;
+  border-radius: var(--rb-radius, 18px);
+  display: grid;
+  place-items: center;
+  background: var(--rb-c, #fff);
+  color: #2B2D42;
+  box-shadow: 0 5px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 4px #2B2D42;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.15s ease;
+  -webkit-touch-callout: none;
+}
+.rb-card .rb-glyph { width: 80%; height: 80%; display: block; pointer-events: none; overflow: visible; }
+.rb-card .rb-loop { width: 86%; height: 86%; }
+.rb-card.is-pressed { transform: translateY(3px); box-shadow: 0 2px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 4px #2B2D42; }
+.rb-card[aria-disabled="true"] { cursor: default; }
+.rb-landing { opacity: 0; } /* waits in place while its copy flies in from the palette */
+.rb-is-running .rb-palette .rb-card { opacity: 0.55; }
+
+.rb-card.is-new { animation: rb-new 1.2s ease-in-out 4; }
+@keyframes rb-new {
+  0%, 100% { transform: scale(1); box-shadow: 0 5px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 4px #2B2D42; }
+  50% { transform: scale(1.1); box-shadow: 0 5px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 4px #2B2D42, 0 0 0 6px #fff, 0 0 18px 8px rgba(255, 209, 102, 0.9); }
+}
+
+/* Running: the card being executed lifts and gets a purple ring. */
+.rb-card.is-active {
+  transform: translateY(-5px) scale(1.08);
+  box-shadow: 0 7px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 4px #2B2D42, 0 0 0 4px #fff, 0 0 0 8px var(--rb-run, #9B5DE5);
+  z-index: 2;
+}
+.rb-block.is-active { box-shadow: inset 0 0 0 4px #2B2D42, 0 0 0 4px #fff, 0 0 0 8px var(--rb-run, #9B5DE5); }
+.rb-block.is-active > .rb-badge { transform: none; }
+
+/* Debugging: the card where the robot bumped glows orange ("look here"). */
+.rb-card.rb-glow { animation: rb-glow 1s ease-in-out infinite; z-index: 2; }
+@keyframes rb-glow {
+  0%, 100% { box-shadow: 0 5px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 4px #2B2D42, 0 0 0 4px var(--rb-glow, #FF9F1C), 0 0 10px 6px rgba(255, 159, 28, 0.55); }
+  50% { box-shadow: 0 5px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 4px #2B2D42, 0 0 0 7px var(--rb-glow, #FF9F1C), 0 0 22px 12px rgba(255, 159, 28, 0.8); }
+}
+
+/* Drag ghost leaving the strip = "this card will be removed". */
+.drag-ghost.rb-ghost-out { opacity: 0.5; transform-origin: center; filter: grayscale(0.4) drop-shadow(0 10px 8px rgba(0, 0, 0, 0.25)); }
+
+/* ================= Command strip ================= */
+
+.rb-strip {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: center;
+  gap: var(--rb-gap);
+  padding: 8px;
+  min-width: 0;
+  min-height: calc(var(--card) + 16px);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 5px 0 rgba(43, 45, 66, 0.15), inset 0 0 0 4px var(--ink);
+  transition: background 0.2s ease;
+}
+.rb-strip.rb-full { background: #FFF0E0; }
+.rb-strip.is-scroll { overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; align-content: flex-start; }
+
+.rb-slot {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--card);
+  height: var(--card);
+  min-width: 64px;
+  min-height: 64px;
+  border-radius: var(--rb-radius);
+  border: 4px dashed rgba(43, 45, 66, 0.28);
+  background: rgba(43, 45, 66, 0.035);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.rb-strip.is-empty > .rb-slot:first-child { animation: rb-slot-hi 1.6s ease-in-out infinite; }
+@keyframes rb-slot-hi {
+  0%, 100% { border-color: rgba(43, 45, 66, 0.28); }
+  50% { border-color: #4CC9F0; background: rgba(76, 201, 240, 0.12); }
+}
+.rb-slot.rb-drop-here {
+  border-color: var(--rb-run);
+  border-style: solid;
+  background: rgba(155, 93, 229, 0.16);
+  transform: scale(1.06);
+  animation: none;
+}
+.rb-drop-before::before, .rb-drop-after::after {
+  content: "";
+  position: absolute;
+  top: 6%;
+  bottom: 6%;
+  width: 6px;
+  border-radius: 3px;
+  background: var(--rb-run, #9B5DE5);
+  box-shadow: 0 0 0 2px #fff;
+  z-index: 3;
+}
+.rb-drop-before::before { left: calc(var(--rb-gap) / -2 - 3px); }
+.rb-drop-after::after { right: calc(var(--rb-gap) / -2 - 3px); }
+
+/* Repeat block: badge (drag handle) + inner arrow slots. */
+.rb-block {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 22px;
+  background: #FFF3CC;
+  box-shadow: inset 0 0 0 4px var(--ink);
+  transition: box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.rb-block[data-card="repeat3"] { background: #FFE6C7; }
+.rb-block.is-lifted { opacity: 0.4; }
+.rb-block { max-width: 100%; }
+.rb-block-body {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap; /* last resort only: the layout picks card sizes that keep this on one row */
+  gap: 4px;
+}
+.rb-inner-slot { background: #fff; border-color: rgba(43, 45, 66, 0.35); }
+.rb-count {
+  position: absolute;
+  left: -12px;
+  top: -12px;
+  z-index: 6;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 7px;
+  border-radius: 17px;
+  display: none;
+  place-items: center;
+  font-weight: 900;
+  font-size: 20px;
+  line-height: 1;
+  color: #fff;
+  background: var(--rb-run, #9B5DE5);
+  box-shadow: inset 0 0 0 3px #2B2D42;
+  pointer-events: none;
+}
+.rb-count.is-on { display: grid; }
+
+/* ================= Palette + actions ================= */
+
+.rb-palette {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: var(--rb-gap);
+  padding: 8px;
+  border-radius: 24px;
+  background: rgba(43, 45, 66, 0.07);
+  min-height: calc(var(--card) + 16px);
+}
+.rb-play {
+  flex: 0 0 auto;
+  width: calc(var(--card) * 1.18);
+  height: calc(var(--card) * 1.18);
+  min-width: 72px;
+  min-height: 72px;
+  border-radius: 26px;
+  display: grid;
+  place-items: center;
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 6px 0 var(--green-d), inset 0 0 0 4px var(--ink);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.2s ease;
+}
+.rb-play .icon { width: 58%; height: 58%; margin-left: 6%; }
+.rb-play:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--green-d), inset 0 0 0 4px var(--ink); }
+/* Running: Play stays Play, pressed down and dimmed; taps are ignored until the robot stops. */
+.rb-play.is-running,
+.rb-play.is-running:active {
+  transform: translateY(4px);
+  opacity: 0.6;
+  box-shadow: 0 2px 0 var(--green-d), inset 0 0 0 4px var(--ink);
+  cursor: default;
+  animation: none;
+}
+.rb-play.rb-nudge { animation: rb-nudge 1.2s ease-in-out infinite; }
+@keyframes rb-nudge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); box-shadow: 0 6px 0 var(--green-d), inset 0 0 0 4px var(--ink), 0 0 0 6px rgba(61, 220, 151, 0.4); }
+}
+
+/* ================= Effects layer ================= */
+
+.rb-fx { position: fixed; inset: 0; z-index: 150; pointer-events: none; overflow: hidden; }
+.rb-fx-box { position: fixed; display: grid; place-items: center; }
+.rb-fx-box > .rb-fx-clone { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; }
+.rb-fx-box > .rb-poofing { animation: rb-poof 0.42s ease-out forwards; }
+.rb-puff {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: inset 0 0 0 3px rgba(43, 45, 66, 0.6);
+  animation: rb-puff 0.5s ease-out forwards;
+}
+@keyframes rb-poof {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+@keyframes rb-puff {
+  0% { transform: translate(0, 0) scale(0.4); opacity: 0.9; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1.1); opacity: 0; }
+}
+.rb-demo-finger {
+  position: absolute;
+  right: -18%;
+  bottom: -22%;
+  width: 62%;
+  height: 62%;
+}
+.rb-demo-finger svg { width: 100%; height: 100%; display: block; }
+
+@keyframes rb-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.rb-shake { animation: rb-shake 0.45s ease-in-out; }
+
+/* ================= Success panel ================= */
+
+/* Covers the controls (board stays visible with the happy robot on the star). */
+.rb-win {
+  --rb-split: 50%;
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: linear-gradient(to bottom, rgba(255, 246, 229, 0) calc(var(--rb-split) - 2px), rgba(255, 246, 229, 0.94) calc(var(--rb-split) + 26px));
+  animation: fade-in 0.25s ease-out;
+}
+.rb-win.is-land {
+  background: linear-gradient(to right, rgba(255, 246, 229, 0) calc(var(--rb-split) - 2px), rgba(255, 246, 229, 0.94) calc(var(--rb-split) + 26px));
+}
+.rb-win-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 2.2vmin, 20px);
+  padding: clamp(14px, 2.6vmin, 26px) clamp(18px, 3.6vmin, 34px);
+  border-radius: 32px;
+  background: #fff;
+  box-shadow: 0 10px 0 rgba(43, 45, 66, 0.18), inset 0 0 0 5px var(--ink);
+  animation: rb-win-in 0.35s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+@keyframes rb-win-in {
+  0% { transform: translateY(30px) scale(0.6); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+.rb-win-stars { display: flex; align-items: flex-end; gap: 6px; }
+.rb-win-star {
+  width: clamp(72px, 16vmin, 120px);
+  height: clamp(72px, 16vmin, 120px);
+  animation: rb-twinkle 1.2s ease-in-out infinite;
+  filter: drop-shadow(0 4px 0 rgba(43, 45, 66, 0.18));
+}
+.rb-win-star svg { width: 100%; height: 100%; display: block; }
+.rb-win-card.is-final .rb-win-star { width: clamp(52px, 12vmin, 96px); height: clamp(52px, 12vmin, 96px); }
+.rb-win-card.is-final .rb-win-star:nth-child(3) { animation-delay: 0.4s; }
+.rb-win-robot {
+  width: clamp(80px, 19vmin, 150px);
+  height: clamp(80px, 19vmin, 150px);
+  animation: rb-happy 0.9s ease-in-out infinite;
+}
+.rb-win-btns { display: flex; align-items: center; gap: clamp(14px, 3vmin, 26px); }
+.rb-win-btn { width: clamp(64px, 11vmin, 88px); height: clamp(64px, 11vmin, 88px); }
+.rb-win-again { background: var(--yellow); }
+.rb-win-next {
+  width: clamp(84px, 15vmin, 124px);
+  height: clamp(84px, 15vmin, 124px);
+  border-radius: 30px;
+  display: grid;
+  place-items: center;
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 7px 0 var(--green-d), inset 0 0 0 5px var(--ink);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.rb-win-next .icon { width: 60%; height: 60%; }
+.rb-win-next:active { transform: translateY(5px); box-shadow: 0 2px 0 var(--green-d), inset 0 0 0 5px var(--ink); animation: none; }
+.rb-win-card.is-final .rb-win-levels { background: var(--green); color: #fff; }
+
+/* Shapes picked by placeWin() to fit beside / under the board. */
+.rb-win-card.is-side { flex-direction: row; }
+.rb-win-card.is-stack .rb-win-btns { flex-direction: column; }
+.rb-win-card.is-stack .rb-win-next { order: -1; }
+/* Final card stacked: robot on top, the two stars under it, its two buttons side by side. */
+.rb-win-card.is-final.is-stack .rb-win-stars { display: grid; grid-template-columns: auto auto; justify-items: center; align-items: end; gap: 4px 10px; }
+.rb-win-card.is-final.is-stack .rb-win-robot { grid-column: 1 / -1; order: -1; }
+.rb-win-card.is-final.is-stack .rb-win-btns { flex-direction: row; }
+.rb-win-card.is-small { gap: 10px; padding: 12px 14px; }
+.rb-win-card.is-small .rb-win-btns { gap: 12px; }
+.rb-win-card.is-small .rb-win-star { width: 56px; height: 56px; }
+.rb-win-card.is-small .rb-win-robot { width: 72px; height: 72px; }
+.rb-win-card.is-small .rb-win-btn { width: 64px; height: 64px; }
+.rb-win-card.is-small .rb-win-next { width: 76px; height: 76px; border-radius: 26px; }
+
+/* The robot keeps celebrating on the star. */
+.rb-robot-body.is-happy { animation: rb-happy 0.9s ease-in-out 0.9s infinite; }
+@keyframes rb-happy {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-10%) rotate(-8deg); }
+  75% { transform: translateY(-10%) rotate(8deg); }
+}

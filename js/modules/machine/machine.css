@@ -1,0 +1,773 @@
+/* Loop Machine — styles. Class prefix "mc-". Answer buttons and word cards are also used as
+   drag ghosts on <body>, so their styles are not nested under .mod-machine.
+   Sizes come from js/modules/machine/session.js (layout) as CSS variables:
+   --g gap, --meter-h, --pip, machine --P/--T/--Tg/--C/--Wp, belt --s/--cg/--rg/--extra,
+   answers --bw/--bh/--u/--ag, order --wf/--wh, end --eb, ticket --tk. */
+
+.mod-machine { overflow: hidden; }
+
+/* ================= Tier picker ================= */
+
+.mc-picker {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: repeat(3, minmax(96px, 1fr));
+  gap: clamp(12px, 2.6vmin, 24px);
+  padding: 4px var(--gutter) calc(var(--gutter) + 8px);
+}
+@media (orientation: landscape) {
+  .mc-picker { grid-template-rows: minmax(0, 1fr); grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.mc-tier {
+  --tier-c: #7FE0B5;
+  position: relative;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  border-radius: 32px;
+  background: var(--tier-c);
+  box-shadow: 0 8px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 5px var(--ink);
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 2vmin, 18px);
+  padding: 10px clamp(12px, 3vmin, 24px);
+  overflow: hidden;
+  color: var(--ink);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.mc-tier[data-index="1"] { --tier-c: #4CC9F0; }
+.mc-tier[data-index="2"] { --tier-c: #B58CF5; }
+.mc-tier::before {
+  /* soft sunburst behind the robot */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 22% 60%, rgba(255, 255, 255, 0.45) 0, rgba(255, 255, 255, 0) 45%);
+  pointer-events: none;
+}
+.mc-tier:active, .mc-tier.is-chosen {
+  transform: translateY(5px) scale(0.985);
+  box-shadow: 0 3px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 5px var(--ink);
+}
+.mc-tier[data-empty] { filter: saturate(0.35); }
+
+.mc-tier-art {
+  position: relative;
+  flex: 0 0 auto;
+  height: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+}
+.mc-tier-floor {
+  /* The robot's shadow, as wide as its robot (--rs = the tier's robot scale, set by picker.js).
+     Percent margins resolve against the art box's width, like the robot's own margin, so the
+     wheels touch down just below the shadow's middle at every size. */
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  margin-bottom: calc(var(--rs, 0.7) * 2.4%);
+  width: calc(var(--rs, 0.7) * 80%);
+  aspect-ratio: 5;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgba(43, 45, 66, 0.2);
+}
+.mc-tier-robot {
+  position: relative;
+  z-index: 1;
+  width: auto;
+  max-width: 100%;
+  /* picker.js sets height and max-width to the tier's share of the art box; when the box is
+     taller than wide (landscape) the robot is drawn square and stands on the floor. */
+  object-fit: contain;
+  object-position: 50% 100%;
+  display: block;
+  margin-bottom: calc(var(--rs, 0.7) * 8%);
+  transform-origin: 50% 100%;
+  animation: mc-idle 2.6s ease-in-out infinite;
+}
+.mc-tier[data-index="1"] .mc-tier-robot { animation-delay: -0.8s; }
+.mc-tier[data-index="2"] .mc-tier-robot { animation-delay: -1.6s; }
+.mc-tier.is-chosen .mc-tier-robot { animation: mc-jump 0.3s ease-out; }
+@keyframes mc-idle { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-4%) rotate(-2deg); } }
+@keyframes mc-jump { 0%, 100% { transform: none; } 50% { transform: translateY(-14%) scale(1.06); } }
+
+.mc-tier-info {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(4px, 1vmin, 8px);
+  pointer-events: none;
+}
+.mc-tier-stars { display: flex; gap: 4px; }
+.mc-tier-star { width: clamp(28px, 6.5vmin, 54px); height: clamp(28px, 6.5vmin, 54px); }
+.mc-tier-star svg, .mc-tier-trophy svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.mc-tier-name {
+  font-weight: 900;
+  font-size: clamp(18px, 3.6vmin, 32px);
+  line-height: 1.15;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 2px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.mc-tier-ages { font-weight: 700; font-size: clamp(12px, 2vmin, 17px); opacity: 0.85; white-space: nowrap; }
+.mc-tier-best {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 12px 3px 5px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: inset 0 0 0 3px var(--ink);
+  font-weight: 900;
+  font-size: clamp(16px, 3vmin, 24px);
+  line-height: 1;
+  pointer-events: none;
+}
+.mc-tier-trophy { width: clamp(26px, 4.6vmin, 38px); height: clamp(26px, 4.6vmin, 38px); }
+
+@media (orientation: landscape) {
+  .mc-tier { flex-direction: column; justify-content: flex-end; padding: 14px 10px 14px; }
+  .mc-tier::before { background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.45) 0, rgba(255, 255, 255, 0) 50%); }
+  .mc-tier-art { width: 100%; height: auto; flex: 1 1 0; min-height: 0; aspect-ratio: auto; }
+  .mc-tier-info { flex: 0 0 auto; align-items: center; }
+  .mc-tier-best { top: 10px; right: 10px; }
+}
+
+/* ================= Session frame ================= */
+
+.mc-play {
+  --g: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--g);
+  padding: 2px var(--gutter) 12px;
+}
+.mc-meter {
+  flex: 0 0 var(--meter-h, 26px);
+  height: var(--meter-h, 26px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--pg, 4px);
+}
+/* Short landscape: the meter stands up along the left edge (session.js sets .is-side-meter). */
+.mc-play.is-side-meter { flex-direction: row; }
+.mc-play.is-side-meter .mc-meter { flex: 0 0 var(--pip); width: var(--pip); height: auto; flex-direction: column; }
+.mc-pip { position: relative; width: var(--pip, 24px); height: var(--pip, 24px); flex: 0 0 auto; }
+.mc-pip svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.mc-pip.is-current svg { animation: mc-pip 1.1s ease-in-out infinite; }
+.mc-pip.is-current svg polygon { fill: rgba(255, 159, 28, 0.28); stroke: #FF9F1C; }
+.mc-pip.is-earned svg { animation: mc-star-drop 0.65s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
+@keyframes mc-pip { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+@keyframes mc-star-drop {
+  0% { transform: translateY(-160%) scale(0.4) rotate(-120deg); opacity: 0; }
+  60% { transform: translateY(8%) scale(1.3) rotate(10deg); opacity: 1; }
+  100% { transform: none; opacity: 1; }
+}
+
+.mc-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  gap: var(--g);
+}
+.mc-play.is-landscape .mc-stage { flex-direction: row; }
+.mc-panel { position: relative; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; }
+
+/* ================= The machine ================= */
+
+.mc-machine {
+  --mc-body: #4CC9F0;
+  --mc-dark: #2A9BC0;
+  --P: 10px;
+  --T: 44px;
+  --Tg: 6px;
+  --C: 18px;
+  --Wp: 8px;
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: var(--P);
+  border-radius: calc(var(--P) * 2 + 8px);
+  background:
+    radial-gradient(circle at 12px 12px, rgba(255, 255, 255, 0.5) 0 3px, transparent 4px) 0 0 / 100% 100% no-repeat,
+    var(--mc-body);
+  box-shadow: 0 7px 0 rgba(43, 45, 66, 0.22), inset 0 0 0 4px var(--ink), inset 0 -10px 0 rgba(43, 45, 66, 0.08);
+}
+.mc-play[data-tier-index="0"] .mc-machine { --mc-body: #3DDC97; --mc-dark: #1FA56B; }
+.mc-play[data-tier-index="2"] .mc-machine { --mc-body: #B58CF5; --mc-dark: #8A5CD8; }
+
+.mc-top {
+  flex: 0 0 var(--T);
+  height: var(--T);
+  margin-bottom: var(--Tg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--T) * 0.16);
+  padding: 0 calc(var(--P) * 0.3);
+}
+.mc-machine.no-top .mc-top { display: none; }
+.mc-top svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.mc-funnel { height: 100%; aspect-ratio: 1; flex: 0 0 auto; }
+.mc-machine.is-running .mc-funnel svg { animation: mc-shake 0.3s ease-in-out infinite; }
+.mc-gear { height: 74%; aspect-ratio: 1; flex: 0 0 auto; }
+.mc-dial { height: 90%; aspect-ratio: 1; flex: 0 0 auto; }
+.mc-machine.no-gear .mc-gear, .mc-machine.no-dial .mc-dial, .mc-machine.no-funnel .mc-funnel { display: none; }
+.mc-gear-spin { transform-box: view-box; transform-origin: 32px 32px; animation: mc-spin 7s linear infinite; }
+.mc-machine.is-running .mc-gear-spin, .mc-machine.is-party .mc-gear-spin { animation-duration: 1.1s; }
+.mc-needle { transform-box: view-box; transform-origin: 32px 34px; animation: mc-needle 3.2s ease-in-out infinite; }
+.mc-machine.is-party .mc-needle { animation-duration: 0.5s; }
+@keyframes mc-spin { to { transform: rotate(360deg); } }
+@keyframes mc-needle { 0%, 100% { transform: rotate(-40deg); } 50% { transform: rotate(35deg); } }
+@keyframes mc-shake { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6%) rotate(-3deg); } }
+
+.mc-lights { display: flex; gap: calc(var(--T) * 0.1); flex: 0 0 auto; }
+.mc-bulb {
+  --bulb: #FF6B6B;
+  width: calc(var(--T) * 0.3);
+  height: calc(var(--T) * 0.3);
+  border-radius: 50%;
+  background: var(--bulb);
+  box-shadow: inset 0 0 0 3px var(--ink), inset -3px -4px 0 rgba(0, 0, 0, 0.12);
+  animation: mc-blink 2.4s ease-in-out infinite;
+}
+.mc-bulb-1 { --bulb: #FFD166; animation-delay: 0.3s; }
+.mc-bulb-2 { --bulb: #FF8FAB; animation-delay: 0.6s; }
+.mc-bulb-3 { --bulb: #FF9F1C; animation-delay: 0.9s; }
+@keyframes mc-blink {
+  0%, 100% { filter: brightness(0.72) saturate(0.7); }
+  35%, 55% { filter: brightness(1.1); box-shadow: inset 0 0 0 3px var(--ink), 0 0 10px 3px var(--bulb); }
+}
+.mc-machine.is-party .mc-bulb { animation: mc-party 0.32s ease-in-out infinite alternate; }
+.mc-machine.is-party .mc-bulb-1, .mc-machine.is-party .mc-bulb-3 { animation-delay: -0.16s; }
+@keyframes mc-party {
+  from { filter: brightness(0.8); transform: scale(0.92); }
+  to { filter: brightness(1.25); transform: scale(1.12); box-shadow: inset 0 0 0 3px var(--ink), 0 0 14px 6px var(--bulb); }
+}
+
+.mc-display {
+  position: relative;
+  flex: 0 1 auto;
+  height: 86%;
+  min-width: calc(var(--T) * 1.45);
+  max-width: 52%;
+  padding: 0 calc(var(--T) * 0.16);
+  border-radius: calc(var(--T) * 0.22);
+  background: #1D3B47;
+  box-shadow: inset 0 0 0 3px var(--ink), inset 0 0 0 6px #2F5866;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.mc-face { flex: 0 0 auto; width: calc(var(--T) * 0.74); height: calc(var(--T) * 0.62); }
+.mc-display[data-mood="happy"] .mc-face { animation: mc-pip 0.5s ease-in-out 3; }
+.mc-display[data-mood="hint"] .mc-face { animation: mc-pip 1s ease-in-out infinite; }
+.mc-rule {
+  display: none;
+  color: #8CFFC1;
+  font-weight: 900;
+  font-size: calc(var(--T) * 0.42);
+  line-height: 1.05;
+  text-align: center;
+  text-shadow: 0 0 8px rgba(140, 255, 193, 0.6);
+  white-space: nowrap;
+}
+.mc-rule.is-long {
+  white-space: normal;
+  font-size: max(12px, calc(var(--T) * 0.3)); /* two lines always fit the display's 86% x T height */
+  display: none;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mc-display.has-rule .mc-face { display: none; }
+.mc-display.has-rule .mc-rule { display: block; animation: pop-in 0.3s ease-out; }
+.mc-display.has-rule .mc-rule.is-long { display: -webkit-box; }
+.mc-display.has-rule { min-width: calc(var(--T) * 1.6); }
+/* A long rule ("add the two before") gets the gear's room on the top row. */
+.mc-machine.has-long-rule .mc-gear { display: none; }
+.mc-machine.has-long-rule .mc-display { max-width: 62%; }
+
+/* Window + belt */
+.mc-window {
+  --s: 64px;
+  --cg: 8px;
+  --rg: 8px;
+  --extra: 0px;
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  border-radius: calc(var(--P) * 1.3 + 6px) calc(var(--P) * 1.3 + 6px) 4px 4px;
+  background: linear-gradient(#FFFFFF, #EAF7FF);
+  box-shadow: inset 0 0 0 4px var(--ink), inset 0 10px 0 rgba(43, 45, 66, 0.05);
+  /* Clip the belt's sides (items slide in and out) but leave headroom above, so the
+     celebration hop and the hint arrows never get their tops cut off. */
+  clip-path: inset(calc(var(--s) * -0.6) 0 0 0);
+}
+.mc-belt {
+  position: absolute;
+  inset: 0;
+  padding: var(--Wp);
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: flex-end;
+  justify-content: center;
+  gap: var(--rg) var(--cg);
+}
+
+.mc-conveyor {
+  position: relative;
+  flex: 0 0 var(--C);
+  height: var(--C);
+  border-radius: 4px 4px calc(var(--C) * 0.5) calc(var(--C) * 0.5);
+  background: var(--ink);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+.mc-conveyor::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 2px;
+  height: 3px;
+  background: repeating-linear-gradient(90deg, #8E94AD 0 10px, transparent 10px 20px);
+  animation: mc-tread 0.5s linear infinite paused;
+}
+.mc-rollers { position: relative; width: 100%; display: flex; justify-content: space-around; align-items: center; padding-top: 3px; }
+.mc-roller {
+  width: calc(var(--C) * 0.62);
+  height: calc(var(--C) * 0.62);
+  border-radius: 50%;
+  background: conic-gradient(#C9CEDD 0 25%, #8E94AD 0 50%, #C9CEDD 0 75%, #8E94AD 0);
+  animation: mc-spin 0.6s linear infinite paused;
+}
+.mc-machine.is-running .mc-roller, .mc-machine.is-party .mc-roller,
+.mc-machine.is-running .mc-conveyor::before, .mc-machine.is-party .mc-conveyor::before { animation-play-state: running; }
+@keyframes mc-tread { to { background-position: 20px 0; } }
+
+/* ================= Belt tokens ================= */
+
+.mc-tok {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--s);
+  height: var(--s);
+  margin-top: var(--extra);
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  transition: transform 0.3s cubic-bezier(0.3, 1.4, 0.5, 1), opacity 0.2s ease;
+}
+.mc-belt > .mc-tok:not(.is-in), .mc-belt > .mc-slot:not(.is-in) {
+  opacity: 0;
+  transform: translateX(calc(var(--s) * -1.4));
+}
+.mc-belt.is-leaving > * {
+  opacity: 0 !important;
+  transform: translateX(calc(var(--s) * 2.4)) !important;
+  transition: transform 0.35s ease-in, opacity 0.3s ease-in !important;
+}
+.mc-tok svg { display: block; }
+.mc-tok-pic {
+  background: #FFFFFF;
+  border-radius: 22%;
+  box-shadow: 0 calc(var(--s) * 0.05) 0 rgba(43, 45, 66, 0.18), inset 0 0 0 3px var(--ink);
+}
+.mc-tok-pic > svg { width: 84%; height: 84%; }
+.mc-tok-num, .mc-tok-word {
+  border-radius: calc(var(--s) * 0.26);
+  box-shadow: 0 calc(var(--s) * 0.05) 0 rgba(43, 45, 66, 0.18), inset 0 0 0 3px var(--ink);
+}
+.mc-tok-num { background: #FFE7A3; font-weight: 900; font-size: calc(var(--s) * 0.5); }
+.mc-tok-word { background: #FFFFFF; font-weight: 800; font-size: calc(var(--s) * 0.42); }
+.mc-tok-text { line-height: 1; white-space: nowrap; }
+.mc-tok-sym { width: calc(var(--s) * 0.5); }
+.mc-tok-sym > svg { width: 100%; height: auto; }
+
+/* The mystery box */
+.mc-qbox {
+  border-radius: 22%;
+  background: linear-gradient(#FFC15A, #FF9F1C);
+  box-shadow: 0 calc(var(--s) * 0.05) 0 rgba(43, 45, 66, 0.18), inset 0 0 0 3px var(--ink), inset 0 -6px 0 rgba(217, 124, 0, 0.5);
+}
+.mc-belt > .mc-qbox.is-in { animation: mc-q 1.25s ease-in-out infinite; }
+@keyframes mc-q { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.08) rotate(-3deg); } }
+.mc-qmark { width: calc(var(--s) * 0.78); height: calc(var(--s) * 0.78); }
+.mc-qmark svg { width: 100%; height: 100%; }
+.mc-qbox.has-target .mc-qmark { width: calc(var(--s) * 0.56); height: calc(var(--s) * 0.56); transform: translate(18%, 14%); }
+.mc-qbox-target {
+  position: absolute;
+  left: 7%;
+  top: 7%;
+  width: 44%;
+  height: 44%;
+  border-radius: 28%;
+  background: #FFFFFF;
+  box-shadow: inset 0 0 0 2.5px var(--ink);
+  display: grid;
+  place-items: center;
+}
+.mc-qbox-target svg { width: 84%; height: 84%; }
+.mc-qfill { position: absolute; inset: 0; display: none; place-items: center; overflow: hidden; border-radius: inherit; }
+.mc-qfill > svg { width: 84%; height: 84%; }
+.mc-qfill .mc-tok-text { font-weight: 900; font-size: calc(var(--s) * 0.46); }
+.mc-qfill .mc-tok-text.is-num { font-size: calc(var(--s) * 0.5); }
+.mc-qbox.is-filled {
+  background: #EFFFF6;
+  box-shadow: 0 calc(var(--s) * 0.05) 0 rgba(43, 45, 66, 0.18), inset 0 0 0 3px var(--ink), 0 0 0 4px #3DDC97;
+}
+.mc-qbox.is-filled > .mc-qmark, .mc-qbox.is-filled > .mc-qbox-target { display: none; }
+.mc-qbox.is-filled > .mc-qfill { display: grid; }
+.mc-play .mc-belt > .mc-qbox.is-target:not(.is-filled) {
+  animation: none;
+  transform: scale(1.14);
+  box-shadow: 0 0 0 5px #FFFFFF, 0 0 18px 8px rgba(255, 209, 102, 0.95), inset 0 0 0 3px var(--ink);
+}
+.mc-belt > .mc-tok.mc-pop { animation: mc-pop 0.45s ease-out; }
+@keyframes mc-pop { 0% { transform: scale(0.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+/* 'set' groups (in buttons: --u based; in the filled box: --s based) */
+.mc-group { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; max-width: 100%; }
+.mc-mini { display: grid; place-items: center; flex: 0 0 auto; }
+.mc-mini svg { width: 100%; height: 100%; display: block; }
+.mc-mini-word {
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  border-radius: 999px;
+  background: #EAF7FF;
+  box-shadow: inset 0 0 0 2.5px var(--ink);
+  color: var(--ink);
+}
+.mc-mini-word.is-num { background: #FFE7A3; }
+.mc-group-ans { gap: calc(var(--u) * 0.07) calc(var(--u) * 0.08); }
+.mc-group-ans .mc-mini-pic { width: calc(var(--u) * 0.44); height: calc(var(--u) * 0.44); }
+.mc-group-ans .mc-mini-word { font-size: calc(var(--u) * 0.27); padding: calc(var(--u) * 0.08) calc(var(--u) * 0.13); }
+/* Picture groups ("which group has more?") stay on one line, so the groups compare by length.
+   No max-width: the group keeps its full width, so the size search in session.js (measureU)
+   sees a row that would not fit, side padding included, instead of a clipped one. */
+.mc-group-ans.mc-group-pics { flex-wrap: nowrap; max-width: none; padding: 0 calc(var(--u) * 0.06); }
+/* --gs = group size in the filled box (session.js shrinks it so the group stays on one line) */
+.mc-group-belt { flex-wrap: nowrap; gap: calc(var(--gs, var(--s)) * 0.05); padding: 0 calc(var(--gs, var(--s)) * 0.1); }
+.mc-group-belt .mc-mini-pic { width: calc(var(--gs, var(--s)) * 0.48); height: calc(var(--gs, var(--s)) * 0.48); }
+.mc-group-belt .mc-mini-word { font-size: calc(var(--gs, var(--s)) * 0.26); padding: calc(var(--gs, var(--s)) * 0.07) calc(var(--gs, var(--s)) * 0.11); }
+.mc-qbox.is-set { border-radius: calc(var(--s) * 0.3); transition: width 0.35s cubic-bezier(0.3, 1.3, 0.5, 1), height 0.35s ease, transform 0.3s ease, opacity 0.2s ease; }
+.mc-break { flex: 0 0 100%; height: 0; }
+
+/* Success: the loop bounces in rhythm */
+.mc-belt > .is-looping, .mc-belt > .mc-qbox.is-looping {
+  animation: mc-hop 0.46s ease-in-out calc(var(--k, 0) * 0.08s) 3 both;
+}
+@keyframes mc-hop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-26%) scale(1.07); }
+  70% { transform: translateY(3%) scale(0.97, 1.02); }
+}
+
+/* ================= Hints ================= */
+
+.mc-tok.is-unit { box-shadow: 0 calc(var(--s) * 0.05) 0 rgba(43, 45, 66, 0.18), inset 0 0 0 3px var(--ink), 0 0 0 4px #FFD166; }
+/* bracket over one repeat of the loop (drawn in .mc-hops by session.js) */
+.mc-bracket { position: absolute; border-top: 5px solid #FF9F1C; pointer-events: none; animation: fade-in 0.3s ease-out; }
+.mc-bracket.is-start { border-left: 5px solid #FF9F1C; border-top-left-radius: 10px; }
+.mc-bracket.is-end { border-right: 5px solid #FF9F1C; border-top-right-radius: 10px; }
+.mc-tok.is-target-item {
+  box-shadow: inset 0 0 0 3px var(--ink), 0 0 0 4px #FFD166, 0 0 12px 4px rgba(255, 209, 102, 0.9);
+  animation: mc-pip 1.2s ease-in-out infinite;
+}
+.mc-tok.is-other-item { opacity: 0.32; filter: grayscale(0.6); }
+/* Every hint also makes the mystery box glow ("the answer goes here"). */
+.mc-play.is-hint .mc-qbox:not(.is-filled) {
+  box-shadow: 0 calc(var(--s) * 0.05) 0 rgba(43, 45, 66, 0.18), inset 0 0 0 3px var(--ink), inset 0 -6px 0 rgba(217, 124, 0, 0.5),
+    0 0 0 4px #FFFFFF, 0 0 16px 7px rgba(255, 209, 102, 0.95);
+}
+.mc-hops { position: absolute; inset: 0; pointer-events: none; }
+.mc-hop { position: absolute; overflow: visible; animation: fade-in 0.3s ease-out; }
+.mc-hop-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #FF9F1C;
+  color: #FFFFFF;
+  font-weight: 900;
+  font-size: max(13px, calc(var(--s) * 0.24));
+  line-height: 1.15;
+  white-space: nowrap;
+  box-shadow: inset 0 0 0 2.5px var(--ink);
+  text-shadow: 0 1px 0 rgba(43, 45, 66, 0.5);
+  animation: pop-in 0.3s ease-out;
+}
+.mc-hop-label.is-q { background: #FFFFFF; color: var(--ink); text-shadow: none; }
+
+/* ================= Answer buttons ================= */
+
+.mc-answers {
+  --ag: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  gap: var(--ag);
+}
+.mc-ans {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--bw, 120px);
+  height: var(--bh, 96px);
+  min-width: 64px;
+  min-height: 72px;
+  padding: 5px;
+  border-radius: 24px;
+  background: #FFFFFF;
+  color: var(--ink);
+  box-shadow: 0 6px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 4px var(--ink);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.25s ease, background 0.2s ease, filter 0.25s ease;
+}
+.mc-ans-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 18px;
+  color: var(--ink);
+}
+.mc-ans-pic { width: calc(var(--u, 48px) * 0.8); height: calc(var(--u, 48px) * 0.8); flex: 0 0 auto; }
+.mc-ans-pic svg { width: 100%; height: 100%; display: block; }
+.mc-ans-text {
+  font-weight: 900;
+  font-size: calc(var(--u, 48px) * 0.44);
+  line-height: 1.1;
+  white-space: nowrap;
+  padding: 0 max(6px, calc(var(--u, 48px) * 0.1));
+}
+.mc-ans-text.is-num { font-size: calc(var(--u, 48px) * 0.56); }
+.mc-ans.is-pressed { transform: translateY(4px); box-shadow: 0 2px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 4px var(--ink); }
+.mc-ans:disabled { cursor: default; }
+.mc-ans.is-wrong {
+  background: #E6E8EF;
+  opacity: 0.5;
+  filter: grayscale(1);
+  box-shadow: 0 2px 0 rgba(43, 45, 66, 0.15), inset 0 0 0 4px rgba(43, 45, 66, 0.55);
+  transform: translateY(4px);
+}
+.mc-ans.is-right {
+  background: #EFFFF6;
+  box-shadow: 0 6px 0 #1FA56B, inset 0 0 0 4px var(--ink), 0 0 0 5px #3DDC97;
+  transform: scale(1.04);
+}
+.mc-ans.is-dim:not(.is-wrong) { opacity: 0.4; }
+.mc-panel:not(.is-ready) .mc-ans { visibility: hidden; }
+.mc-panel.is-ready .mc-ans { animation: mc-in 0.3s ease-out calc(var(--i, 0) * 0.07s) backwards; }
+/* (a wrong answer's wobble runs as a Web Animation in session.js, so this entrance never replays) */
+@keyframes mc-in { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.04); opacity: 1; } 100% { transform: scale(1); } }
+.mc-panel.is-leaving > * { opacity: 0; transform: translateY(18px); transition: opacity 0.3s ease, transform 0.3s ease; }
+.drag-ghost.mc-ans { transform-origin: center; }
+
+/* Flyer: answer content flying into the box */
+.mc-flyer { position: fixed; z-index: 80; pointer-events: none; margin: 0; filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.2)); }
+
+/* ================= Order rounds ================= */
+
+.mc-slot {
+  position: relative;
+  flex: 0 0 auto;
+  height: var(--wh, 64px);
+  min-width: 64px;
+  min-height: 64px;
+  margin-top: 0;
+  border-radius: 16px;
+  border: 3px dashed rgba(43, 45, 66, 0.35);
+  background: rgba(43, 45, 66, 0.05);
+  display: flex;
+  transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1), opacity 0.2s ease, background 0.15s ease, border-color 0.15s ease, width 0.2s ease;
+}
+.mc-slot.is-full { border-color: transparent; background: none; }
+.mc-slot.is-drop { border: 3px solid var(--purple); background: rgba(155, 93, 229, 0.16); transform: scale(1.05); }
+.mc-belt > .mc-slot.is-looping { animation: mc-hop 0.46s ease-in-out calc(var(--k, 0) * 0.07s) 3 both; }
+.mc-tray {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: inset 0 0 0 3px rgba(43, 45, 66, 0.14);
+}
+.mc-panel.is-tight .mc-tray { overflow-y: auto; overscroll-behavior: contain; align-content: flex-start; }
+.mc-home {
+  flex: 0 0 auto;
+  height: var(--wh, 64px);
+  min-width: 64px;
+  border-radius: 16px;
+  border: 3px dashed rgba(43, 45, 66, 0.18);
+  display: flex;
+}
+.mc-home:has(> .mc-word) { border-color: transparent; }
+.mc-panel:not(.is-ready) .mc-home { visibility: hidden; }
+.mc-panel.is-ready .mc-home { animation: pop-in 0.3s ease-out calc(var(--i, 0) * 0.05s) backwards; }
+.mc-word {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-width: 64px;
+  min-height: 64px;
+  padding: 0 6px;
+  margin: -3px;
+  border-radius: 16px;
+  background: #FFFFFF;
+  color: var(--ink);
+  font-weight: 800;
+  font-size: var(--wf, 22px);
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 5px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 4px var(--ink);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.mc-word-text { pointer-events: none; }
+.mc-slot .mc-word { font-size: var(--wfs, var(--wf, 22px)); }
+.mc-word.is-pressed { box-shadow: 0 2px 0 rgba(43, 45, 66, 0.25), inset 0 0 0 4px var(--ink); }
+.mc-word.is-locked {
+  background: #DDFBEA;
+  box-shadow: 0 5px 0 #1FA56B, inset 0 0 0 4px var(--ink), 0 0 0 3px #3DDC97;
+  cursor: default;
+}
+.mc-word.mc-pop { animation: mc-pop 0.45s ease-out; }
+.drag-ghost.mc-word { margin: 0 !important; }
+
+/* ================= End of session ================= */
+
+.mc-endbtns { width: 100%; height: 100%; display: flex; gap: var(--g); align-items: center; justify-content: center; }
+.mc-play.is-landscape .mc-endbtns { flex-direction: column; }
+.mc-end-btn {
+  --d: var(--green-d);
+  width: calc(var(--eb, 96px) * 1.35);
+  height: var(--eb, 96px);
+  min-width: 80px;
+  min-height: 80px;
+  border-radius: 28px;
+  display: grid;
+  place-items: center;
+  color: #FFFFFF;
+  background: var(--green);
+  box-shadow: 0 7px 0 var(--d), inset 0 0 0 4px var(--ink);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.mc-play.is-landscape .mc-end-btn { width: var(--eb, 96px); }
+.mc-machines { --d: var(--blue-d); background: var(--blue); }
+.mc-end-btn .icon { width: 48%; height: 48%; }
+.mc-end-btn:active { transform: translateY(5px); box-shadow: 0 2px 0 var(--d), inset 0 0 0 4px var(--ink); }
+.mc-panel:not(.is-ready) .mc-end-btn { visibility: hidden; }
+.mc-panel.is-ready .mc-end-btn { animation: pop-in 0.35s ease-out backwards; }
+.mc-panel.is-ready .mc-machines { animation-delay: 0.1s; }
+.mc-again { animation: none; }
+.mc-panel.is-ready .mc-again { animation: pop-in 0.35s ease-out backwards, mc-nudge 1.6s ease-in-out 1.2s infinite; }
+@keyframes mc-nudge { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+
+.mc-ticket-wrap {
+  --tk: 160px;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  pointer-events: none;
+  overflow: hidden;
+}
+.mc-slotbar {
+  /* the printer slot the ticket comes out of */
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: calc(var(--tk) + 28px);
+  height: 12px;
+  transform: translateX(-50%);
+  border-radius: 0 0 10px 10px;
+  background: var(--ink);
+  z-index: 2;
+}
+.mc-ticket {
+  --print: 0;
+  position: relative;
+  width: var(--tk);
+  margin-top: 4px;
+  padding: calc(var(--tk) * 0.12) calc(var(--tk) * 0.1) calc(var(--tk) * 0.1);
+  border-radius: 0 0 calc(var(--tk) * 0.1) calc(var(--tk) * 0.1);
+  background:
+    radial-gradient(circle, rgba(43, 45, 66, 0.25) 0 3px, transparent 3.5px) 0 calc(var(--tk) * 0.04) / 16px 10px repeat-x,
+    #FFFFFF;
+  box-shadow: inset 4px 0 0 var(--ink), inset -4px 0 0 var(--ink), inset 0 -4px 0 var(--ink), 0 6px 0 rgba(43, 45, 66, 0.18);
+  transform: translateY(calc((1 - var(--print)) * -104%));
+  transition: transform 0.13s ease-out;
+}
+.mc-ticket-rows { display: flex; flex-direction: column; align-items: center; gap: calc(var(--tk) * 0.03); }
+.mc-ticket-row { display: flex; align-items: center; gap: calc(var(--tk) * 0.06); font-weight: 900; font-size: calc(var(--tk) * 0.28); line-height: 1; color: var(--ink); }
+.mc-ticket-star { width: calc(var(--tk) * 0.36); height: calc(var(--tk) * 0.36); }
+.mc-ticket-star svg, .mc-ticket-best svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.mc-ticket-row.is-silver { font-size: calc(var(--tk) * 0.2); }
+.mc-ticket-row.is-silver .mc-ticket-star { width: calc(var(--tk) * 0.24); height: calc(var(--tk) * 0.24); }
+.mc-ticket-best {
+  /* a "new best" trophy sticker on the ticket's corner */
+  position: absolute;
+  right: calc(var(--tk) * -0.2);
+  top: calc(var(--tk) * 0.16);
+  width: calc(var(--tk) * 0.32);
+  height: calc(var(--tk) * 0.32);
+  padding: calc(var(--tk) * 0.03);
+  border-radius: 50%;
+  background: #FFF6E5;
+  box-shadow: inset 0 0 0 3px var(--ink), 0 4px 0 rgba(43, 45, 66, 0.2);
+  animation: mc-sticker 1.8s ease-in-out infinite;
+}
+@keyframes mc-sticker { 0%, 100% { transform: rotate(-8deg) scale(1); } 50% { transform: rotate(8deg) scale(1.08); } }
+
+/* ================= Top bar badge ================= */
+
+.mc-badge {
+  height: 46px;
+  padding: 0 10px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #FFFFFF;
+  box-shadow: inset 0 0 0 3px var(--ink);
+}
+/* The SVG is (34n + 6) x 42; give it an explicit width so the badge never collapses. */
+.mc-badge svg { --bh: 26px; height: var(--bh); width: calc(var(--bh) * (34 * var(--n, 1) + 6) / 42); display: block; }
+/* The top bar's actions box may shrink; keep the badge whole (the caption wraps instead). */
+body[data-screen="machine"] .topbar-actions { flex-shrink: 0; }
+@media (max-width: 420px) {
+  .mc-badge { height: 40px; padding: 0 7px; }
+  .mc-badge svg { --bh: 20px; }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "little-loops",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline PWA of playful coding and thinking games for ages 4-12. No dependencies.",
+  "type": "module",
+  "scripts": {
+    "start": "node tools/serve.mjs 8080",
+    "start:subpath": "node tools/serve.mjs 8080 --base little-loops",
+    "validate": "node tools/validate.mjs",
+    "validate:levels": "node tools/validate-levels.mjs",
+    "validate:art": "node tools/validate-art.mjs",
+    "icons": "node tools/make-icons.mjs",
+    "precache": "node tools/precache.mjs",
+    "precache:check": "node tools/precache.mjs --check",
+    "test": "node tools/smoke-test.mjs",
+    "validate:machine": "node tools/validate-machine.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

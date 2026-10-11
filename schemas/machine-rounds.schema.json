@@ -1,0 +1,387 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:little-loops:schema:machine-rounds:1",
+  "title": "Little Loops - Loop Machine puzzle bank (machine-rounds/1)",
+  "description": "Puzzle bank for Loop Machine, a Little Loops mini-game for children aged 4-12. A cheerful machine runs a 'loop' along a conveyor belt: a repeating picture pattern, a number rule or a word puzzle, with exactly one mystery box \"?\". The child taps (or drags) one of 2-4 answer buttons. There are three difficulty tiers (little 4-6, big 7-9, super 10-12) and three levels per tier; a session plays `sessionLength` rounds of one tier, ramping from level 1 to 3 and mixing round types. Mistakes are never punished: a wrong button wobbles and grays out, the `hint` comes while two answers are still in play (after 2 misses with 4 choices, after the first miss with 3; a 2-choice round has no hint because one miss leaves only the answer), and every round ends with the child finding the answer. The question (`say`) is ALWAYS spoken; in big/super the answer words are not read aloud by default because reading them is the challenge. Every bank must pass `node tools/validate-machine.mjs <file>`, which checks this schema plus rules a JSON Schema cannot express: the answer is one of the choices; picture patterns really loop (and no wrong choice also completes a loop); count answers equal the number of `target` pictures; sequences obey their `rule` and no wrong choice fits another simple number rule; more/fewer groups have a strict winner; compound words add up; word-family distractors do not share the family ending. GOOD ROUNDS: (1) exactly ONE defensible correct choice (for rhymes only one choice may rhyme; for opposites/synonyms no distractor may also be an opposite/synonym; for analogies the relation must pick one answer); (2) plausible distractors that catch a real mistake (off-by-one, wrong rule, digit reversal 14/41 in big/super only, counting everything instead of the target, look-alike spelling, sound-alike words) so it is a little challenging but never a trick; (3) short, friendly, spoken-friendly English: write ALL text in US English (color, favorite, mom, period), inclusive, no brands, nothing scary or violent; themes kids like: animals, space, dinosaurs, food, sports, the beach, robots; (4) every spoken line must make sense to a child who only HEARS it: a hint must not describe a property that a distractor also has (\"one spelling is a number\" when eight and eighth are both choices), and a rule stated in `say` must rule out every distractor (\"the jumps get bigger\" also fits 1, 3, 6, 10, 16).",
+  "type": "object",
+  "required": ["schema", "sessionLength", "tiers", "rounds"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional editor hint pointing at this schema file (e.g. \"../../schemas/machine-rounds.schema.json\"). Ignored by the game."
+    },
+    "schema": {
+      "const": "machine-rounds/1",
+      "description": "Format identifier and version. Must be exactly \"machine-rounds/1\"."
+    },
+    "sessionLength": {
+      "type": "integer",
+      "minimum": 3,
+      "maximum": 20,
+      "default": 10,
+      "description": "Rounds per session (one prize at the end). 10 is the tested value. Each tier should hold at least 3 x sessionLength rounds so the game can avoid recently played ones."
+    },
+    "tiers": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "description": "Exactly three tiers, in this order: little (1 star, ages 4-6), big (2 stars, ages 7-9), super (3 stars, ages 10-12). Children pick a tier by robot size and star count, so ids and stars are fixed; only `name` and `say` are free text.",
+      "prefixItems": [
+        {
+          "allOf": [{ "$ref": "#/$defs/tier" }],
+          "properties": { "id": { "const": "little" }, "stars": { "const": 1 } },
+          "description": "The little tier: ages 4-6, NO READING. Only pictures, numbers and symbols: AB / AAB / ABB / ABC picture loops with ONE changing attribute (shape, color or object), counting 1-9 pictures (levels 2-3: count only the target among other pictures), number after / before / missing up to 20 (+1 steps), and 'which group has more / fewer' with picture groups."
+        },
+        {
+          "allOf": [{ "$ref": "#/$defs/tier" }],
+          "properties": { "id": { "const": "big" }, "stars": { "const": 2 } },
+          "description": "The big tier: ages 7-9, early readers. Skip counting by 2s, 3s, 4s, 5s, 7s, 10s, 25s, counting back, missing middle numbers, simple doubling, AABB / ABCD / growing picture loops, rhymes, opposites, compound words, missing letters (letters as tokens), word families, plurals (incl. irregular: mice, sheep, teeth), categories, simple analogies, 4-6 word sentence ordering."
+        },
+        {
+          "allOf": [{ "$ref": "#/$defs/tier" }],
+          "properties": { "id": { "const": "super" }, "stars": { "const": 3 } },
+          "description": "The super tier: ages 10-12, genuinely challenging. Doubling / halving, x3, squares, cubes, triangular numbers, Fibonacci, primes, alternating rules (alt:+3,-1, alt:*2,+1), negative numbers, two-attribute picture loops (shape cycles every 2, color every 3), analogies, homophones in context, harder synonyms / antonyms, prefixes / suffixes, parts-of-speech sets, 6-8 word sentences with a comma."
+        }
+      ],
+      "items": false
+    },
+    "rounds": {
+      "type": "array",
+      "minItems": 1,
+      "description": "All puzzles of all tiers, in any order (the game filters by tier and level). Aim for at least 40 rounds per tier and at least 12 per level, with at least 3 round types per level so sessions can mix types.",
+      "items": { "$ref": "#/$defs/round" }
+    }
+  },
+  "$defs": {
+    "tier": {
+      "type": "object",
+      "description": "One difficulty tier (a machine on the tier picker).",
+      "required": ["id", "name", "ages", "stars", "say"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": ["little", "big", "super"],
+          "description": "Tier id; rounds refer to it in `tier`. Fixed: little, big, super (in that order)."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 24,
+          "description": "Short display name for grown-ups under the robot, e.g. \"Little\"."
+        },
+        "ages": {
+          "type": "string",
+          "pattern": "^[0-9]{1,2}-[0-9]{1,2}$",
+          "description": "Age range shown in small text for grown-ups, e.g. \"4-6\"."
+        },
+        "stars": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3,
+          "description": "Difficulty stars on the button: 1 = little, 2 = big, 3 = super."
+        },
+        "say": {
+          "$ref": "#/$defs/spokenText",
+          "description": "Spoken when the tier is chosen. Short and fun, e.g. \"Little machine! Picture puzzles for you.\" Same TTS rules as round `say`."
+        }
+      }
+    },
+    "spokenText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 110,
+      "pattern": "^[^←-⇿➔➡+=×÷*/\\\\<>^~|{}\\[\\]#@%&_]*$",
+      "not": { "pattern": "[0-9]\\s*[xX×*–—−-]\\s*[0-9]" },
+      "description": "A sentence read aloud by speech synthesis, in US English. At most 110 characters and ideally at most 15 simple words (longer utterances get cut off). Must be TTS-friendly: NO symbols (no arrows, +, =, /, *, <, >, %, #, &, _ ) and no math written with a letter or dash between numbers (\"3 x 4\", \"9 - 3\", \"4-6\"); write words instead: \"plus\", \"minus\", \"times\", \"half\", \"goes with\", \"makes\", \"four to six\". Prefer number words in phrases (\"count by fives\", not \"count by 5s\"). Avoid words that speech engines pronounce two ways when said alone (\"bow\", \"read\", \"wind\", \"tear\"). Plain punctuation (. , ! ? ' - :) is fine."
+    },
+    "number": {
+      "type": "number",
+      "description": "A number token, drawn as a number chip and spoken as the number. Use whole numbers for kids; negative numbers only in the super tier (shown with a real minus sign)."
+    },
+    "picture": {
+      "type": "string",
+      "description": "A picture token, drawn by tokenSVG() in js/modules/machine/tokens.js and spoken by tokenName(). Shape-color ids are \"<shape>-<color>\" with shapes circle, square, triangle, star, heart, diamond and colors red, blue, yellow, green, purple, orange (spoken \"red circle\"). Object ids: apple, fish, flower, balloon, cupcake, moon, cloud, ladybug. NOTE: these object names are reserved - the word \"fish\" in a word puzzle or sentence is drawn as a fish picture, so avoid them as words (\"fish.\" with punctuation or \"goldfish\" are ordinary words).",
+      "enum": [
+        "circle-red", "circle-blue", "circle-yellow", "circle-green", "circle-purple", "circle-orange",
+        "square-red", "square-blue", "square-yellow", "square-green", "square-purple", "square-orange",
+        "triangle-red", "triangle-blue", "triangle-yellow", "triangle-green", "triangle-purple", "triangle-orange",
+        "star-red", "star-blue", "star-yellow", "star-green", "star-purple", "star-orange",
+        "heart-red", "heart-blue", "heart-yellow", "heart-green", "heart-purple", "heart-orange",
+        "diamond-red", "diamond-blue", "diamond-yellow", "diamond-green", "diamond-purple", "diamond-orange",
+        "apple", "fish", "flower", "balloon", "cupcake", "moon", "cloud", "ladybug"
+      ]
+    },
+    "symbol": {
+      "type": "string",
+      "enum": ["→", "+", "=", "?"],
+      "description": "Separator symbols drawn on the belt: \"→\" (spoken \"goes with\", for opposites / analogies / plurals: [\"hot\", \"→\", \"?\"]), \"+\" and \"=\" (for compound words, prefixes and suffixes: [\"rain\", \"+\", \"bow\", \"=\", \"?\"]), and \"?\" = the mystery box the answer flies into. Symbols are never answers."
+    },
+    "mysteryBox": {
+      "const": "?",
+      "description": "The mystery box: the one place on the belt where the answer goes."
+    },
+    "word": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 24,
+      "not": { "anyOf": [{ "$ref": "#/$defs/picture" }, { "$ref": "#/$defs/symbol" }] },
+      "description": "A word or letter token (any 1-24 character string that is not a picture id or a symbol), drawn as a word chip: \"cat\", \"c\", \"sunflower\", \"They're\", \"house.\". Single letters are used for missing-letter puzzles. Not allowed in the little tier (ages 4-6 cannot read yet)."
+    },
+    "token": {
+      "description": "Anything that can appear on the belt: a number, a picture id, a symbol or a word/letter.",
+      "anyOf": [
+        { "$ref": "#/$defs/number" },
+        { "$ref": "#/$defs/picture" },
+        { "$ref": "#/$defs/symbol" },
+        { "$ref": "#/$defs/word" }
+      ]
+    },
+    "answerToken": {
+      "description": "Anything that can be an answer button: a number, a picture or a word (never a symbol).",
+      "anyOf": [
+        { "$ref": "#/$defs/number" },
+        { "$ref": "#/$defs/picture" },
+        { "$ref": "#/$defs/word" }
+      ]
+    },
+    "littleToken": {
+      "description": "A token a 4-6 year old can understand without reading: a number, a picture or a symbol.",
+      "anyOf": [
+        { "$ref": "#/$defs/number" },
+        { "$ref": "#/$defs/picture" },
+        { "$ref": "#/$defs/symbol" }
+      ]
+    },
+    "group": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 6,
+      "items": { "$ref": "#/$defs/answerToken" },
+      "description": "A small group of 1-6 tokens shown together on one answer button (set rounds), e.g. [\"run\", \"jump\", \"swim\"] or [\"apple\", \"apple\", \"apple\"]. Keep word groups to about 3 short words so the button stays readable on a phone."
+    },
+    "round": {
+      "type": "object",
+      "description": "One puzzle. Common fields: id, tier, level, type, say, hint, explain, skill. Type-specific fields: pattern / sequence / word use show + choices + answer (show has exactly one \"?\"); count uses target + show + choices + answer (no \"?\"); set uses choices + answer where each choice is a group (optional show without \"?\", optional target); order uses words only.",
+      "required": ["id", "tier", "level", "type", "say"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "maxLength": 32,
+          "description": "Unique id, never reused (the game remembers recently played ids). Convention: <tier letter>-<type code>-<two digits>, tier letter l / b / s, type code pat / cnt / seq / wrd / set / ord, numbered per tier and type, e.g. \"l-pat-01\", \"b-wrd-07\", \"s-seq-03\"."
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["little", "big", "super"],
+          "description": "Which machine (age group) the round belongs to. Must match a tier id."
+        },
+        "level": {
+          "type": "integer",
+          "enum": [1, 2, 3],
+          "description": "Difficulty inside the tier: 1 = warm-up, 2 = medium, 3 = hardest. Sessions ramp from 1 to 3. Raise difficulty with: the \"?\" in the middle or at the start instead of the end, longer loop units, bigger numbers or steps, closer distractors (off by one, look-alike spelling), tricky words (irregular plurals, rhymes spelled differently)."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["pattern", "count", "sequence", "word", "set", "order"],
+          "description": "pattern = picture loop with one \"?\"; count = how many `target` pictures; sequence = number rule with one \"?\"; word = word / letter puzzle with one \"?\"; set = pick the group that fits (each choice is a group); order = put shuffled word cards into a sentence."
+        },
+        "skill": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Short lowercase label of the skill practiced, used for checks and future reporting. Word rounds: rhyme, opposite, compound, missing-letter, word-family, plural, analogy, synonym, antonym, homophone, prefix, suffix. Set rounds: more, fewer (the validator checks the answer group is strictly biggest / smallest, counting only `target` if given), category, verbs, adjectives, nouns, adverbs, synonyms. Pattern rounds may name the loop unit with letters (ab, aab, abb, abc, aabb, abcd - checked against the belt) or growing / two-loops. Checked skills: compound (show [a, \"+\", b, \"=\", \"?\"] or with the \"?\" in place of a part), word-family (belt words share an ending; only the answer may share it), missing-letter (single letters, and `say` must name the whole word: \"Which letter is missing from the word robot?\"; no distractor letter may make another real word, so never c?t with a / o / u), rhyme (no distractor may share the rhyme ending)."
+        },
+        "say": {
+          "$ref": "#/$defs/spokenText",
+          "description": "The spoken question, read aloud when the round starts and on the replay button. At most 15 simple words, friendly, TTS-friendly (no symbols). For the little tier it must fully explain the task, because the child cannot read (\"How many fish? Only count the fish!\"). It must not give the answer away; for big / super word rounds the question is spoken but the answer words are read by the child (\"Which word rhymes with cake?\"). Homophone rounds say \"Pick the right spelling\" (the choices sound the same)."
+        },
+        "hint": {
+          "$ref": "#/$defs/spokenText",
+          "description": "Spoken when the hint shows: once only two answers are left (after 2 misses with 4 choices, after the first miss with 3; 2-choice rounds get none). The game also shows `ruleLabel`, brackets one loop unit, draws the jumps or highlights the pictures to count, and reads the two answers still in play aloud. Required in practice for levels 2-3, nice for level 1. Gives a STRATEGY, never the answer (not even as a number word): \"Point to each fish. Skip the apples.\", \"Add five to the last number.\", \"Try putting I can in front of each word.\" The strategy must separate the answer from every distractor (a prime-number hint that also lets 17 through does not help). Pictures and numbers on the belt do not react to taps, so never say \"Touch each\" or \"Tap each\"; say \"Point to each\"."
+        },
+        "explain": {
+          "$ref": "#/$defs/spokenText",
+          "description": "Spoken right after the correct answer; teaches the rule in one short line and may name the answer: \"It goes up by two each time!\", \"Cake and lake rhyme!\", \"Preheat means heat before.\" Include it in most rounds (otherwise a random praise phrase is spoken). Order rounds: the game reads the finished sentence aloud right before the explain, so the explain must NOT repeat the sentence; teach the rule instead (\"Questions end with a question mark!\", \"The comma ends the first part.\")."
+        },
+        "ruleLabel": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 24,
+          "description": "Short VISUAL label shown with the hint (not spoken, so symbols are fine): \"+2\", \"-10\", \"x2\", \"half\", \"add the two before\", \"x2, then +1\". Recommended for every sequence round; optional elsewhere."
+        },
+        "rule": {
+          "type": "string",
+          "minLength": 1,
+          "examples": ["+2", "-5", "*2", "/2", "squares", "cubes", "triangular", "fibonacci", "primes", "alt:+3,-1", "alt:*2,+1", "growing"],
+          "description": "Machine-checked rule. Sequence rounds: \"+k\" / \"-k\" (add / subtract k each step), \"*k\" or \"xk\" (multiply), \"/k\" (divide), \"squares\", \"cubes\", \"triangular\" (consecutive ones, any start), \"fibonacci\" (each number = sum of the two before, any two starting numbers), \"primes\" (consecutive primes), \"alt:<step>,<step>\" (steps take turns, e.g. \"alt:+3,-1\" or \"alt:*2,+1\"; each step must be visible at least twice). The full sequence with the answer must obey it, and no wrong choice may fit any simple rule. Unknown rules are only a warning (not verified). Pattern rounds: omit it for a repeating loop, or \"growing\" for head, tail x k, head, tail x (k+1), ... (e.g. cloud balloon cloud balloon balloon cloud balloon balloon balloon)."
+        },
+        "show": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "items": { "$ref": "#/$defs/token" },
+          "description": "The belt, left to right. The belt is laid out for up to 9 items (portrait phones), so keep it to 9. pattern: pictures + one \"?\"; with the answer filled in, the loop unit must repeat at least twice in view (AB AB A? = 6 items is the minimum for a 2-unit). sequence: at least 3 numbers + one \"?\". word: words / letters / symbols + one \"?\". count: pictures only, no \"?\". set: optional, no \"?\"."
+        },
+        "target": {
+          "$ref": "#/$defs/picture",
+          "description": "count rounds: which picture to count (the answer must equal how many times it appears in `show`). set rounds with skill more / fewer: count only this picture in each group (e.g. 'which group has more fish?' where the other group has more things in total)."
+        },
+        "choices": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "anyOf": [{ "$ref": "#/$defs/answerToken" }, { "$ref": "#/$defs/group" }]
+          },
+          "description": "2-4 different answer buttons, one of which equals `answer` (the game shuffles them). Use 3 for little, 3-4 for big, 4 for super (the hint comes once two answers are left: after the first miss with 3 choices, after the second with 4; a 2-choice round gets no hint). Distractors must be plausible but clearly wrong: off-by-one, the wrong rule, a digit reversal (big/super only: the little tier cannot read, so its number distractors are counting slips such as one more or one less, up to 20), counting all pictures, a look-alike or sound-alike word. Never a second defensible answer."
+        },
+        "answer": {
+          "anyOf": [{ "$ref": "#/$defs/answerToken" }, { "$ref": "#/$defs/group" }],
+          "description": "The correct choice, written exactly like one entry of `choices` (same type: 7 not \"7\"; for set rounds the same group in the same order)."
+        },
+        "words": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 9,
+          "items": { "$ref": "#/$defs/word" },
+          "description": "order rounds: the sentence's word cards in the CORRECT order (the game shuffles them). Big: 4-6 words; super: 6-8 words incl. a comma. First word capitalized, last word carries the end punctuation (\"fast.\", \"moon?\", \"comet!\"); punctuation stays attached to its word (\"Saturday,\"). Exactly one grammatical order must exist (the game accepts only this exact order): avoid swappable pairs (\"cats and dogs\"), stacked adjectives and movable phrases; never use two DIFFERENT lowercase determiners (a / an / the / my / our / your / their / this / these / those / some), because they swap (\"At the beach, we built a sandcastle.\" also works as \"At a beach, we built the sandcastle.\"): use a plural or a number instead; an adjective must fit only one noun (\"huge\" fits beach and sandcastle, \"tall\" only sandcastles); avoid duplicate cards."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "pattern" } }, "required": ["type"] },
+          "then": {
+            "description": "pattern: a picture loop. Little: AB, AAB, ABB, ABC with ONE changing attribute. Big: AABB, ABCD, growing. Super: two-attribute loops (shape repeats every 2 and color every 3: the shape loop and color loop must each repeat twice in view). Distractors: the picture that comes next in a wrong unit, the right shape in the wrong color, the right color in the wrong shape.",
+            "required": ["show", "choices", "answer"],
+            "properties": {
+              "show": {
+                "items": { "anyOf": [{ "$ref": "#/$defs/picture" }, { "$ref": "#/$defs/mysteryBox" }] },
+                "contains": { "const": "?" },
+                "minContains": 1,
+                "maxContains": 1,
+                "minItems": 5
+              },
+              "choices": { "items": { "$ref": "#/$defs/picture" } },
+              "answer": { "$ref": "#/$defs/picture" },
+              "target": false,
+              "words": false
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "count" } }, "required": ["type"] },
+          "then": {
+            "description": "count: 'how many <target>?'. Level 1: only the target picture (1-5). Levels 2-3: the target mixed with other pictures (always at least one other picture), up to 9 items; distractors include the total number of pictures and off-by-one.",
+            "required": ["target", "show", "choices", "answer"],
+            "properties": {
+              "show": { "items": { "$ref": "#/$defs/picture" } },
+              "choices": { "items": { "type": "integer", "minimum": 0, "maximum": 20 } },
+              "answer": { "type": "integer", "minimum": 1, "maximum": 20 },
+              "rule": false,
+              "words": false
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "sequence" } }, "required": ["type"] },
+          "then": {
+            "description": "sequence: a number rule with one \"?\" (end, middle or start). Give `rule` and `ruleLabel`. Distractors: off by one, the step applied once too often or to the wrong number, a different rule (e.g. +6 instead of x2), digit reversal. Avoid distractors that make another sensible rule (2, 4, 8, 14 grows by +2, +4, +6!).",
+            "required": ["show", "choices", "answer"],
+            "properties": {
+              "show": {
+                "items": { "anyOf": [{ "$ref": "#/$defs/number" }, { "$ref": "#/$defs/mysteryBox" }] },
+                "contains": { "const": "?" },
+                "minContains": 1,
+                "maxContains": 1,
+                "minItems": 4
+              },
+              "choices": { "items": { "$ref": "#/$defs/number" } },
+              "answer": { "$ref": "#/$defs/number" },
+              "target": false,
+              "words": false
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "word" } }, "required": ["type"] },
+          "then": {
+            "description": "word: a word or letter puzzle with one \"?\" on the belt, e.g. rhyme [\"cake\", \"→\", \"?\"], opposite [\"hot\", \"→\", \"?\"], compound [\"rain\", \"+\", \"bow\", \"=\", \"?\"], missing letter [\"r\", \"o\", \"b\", \"?\", \"t\"], word family [\"hop\", \"mop\", \"top\", \"?\"], plural [\"mouse\", \"→\", \"?\"], analogy [\"bird\", \"→\", \"nest\", \"bee\", \"→\", \"?\"], homophone in context [\"We\", \"went\", \"to\", \"?\", \"house.\"], prefix [\"?\", \"+\", \"heat\"], suffix [\"care\", \"+\", \"?\"]. Choices are single words or letters. Missing letter: `say` names the whole word (\"Which letter is missing from the word robot?\") and no wrong letter may make another real word. Outside homophone rounds, avoid a distractor that SOUNDS exactly like the answer (hear / here): with \"Read word answers aloud\" on, a child listening cannot tell them apart.",
+            "required": ["show", "choices", "answer"],
+            "properties": {
+              "show": {
+                "contains": { "const": "?" },
+                "minContains": 1,
+                "maxContains": 1,
+                "minItems": 2
+              },
+              "choices": { "items": { "$ref": "#/$defs/answerToken" } },
+              "answer": { "$ref": "#/$defs/answerToken" },
+              "target": false,
+              "rule": false,
+              "words": false
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "set" } }, "required": ["type"] },
+          "then": {
+            "description": "set: 'which group ...?'. Each choice is a group; exactly one group fits completely, and every other group contains at least one clear intruder (a look-alike word, a trap like penguin among fliers or lovely among adverbs). Little: picture groups for more / fewer. Big: categories (animals, foods, things with wheels, things that fly). Super: parts of speech (verbs, adjectives, nouns, adverbs), synonyms, science categories.",
+            "required": ["choices", "answer"],
+            "properties": {
+              "show": { "not": { "contains": { "const": "?" } } },
+              "choices": { "items": { "$ref": "#/$defs/group" } },
+              "answer": { "$ref": "#/$defs/group" },
+              "rule": false,
+              "words": false
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "order" } }, "required": ["type"] },
+          "then": {
+            "description": "order: put shuffled word cards into the one correct sentence. Only `words` (plus the common fields); no show / choices / answer.",
+            "required": ["words"],
+            "properties": {
+              "show": false,
+              "choices": false,
+              "answer": false,
+              "target": false,
+              "rule": false,
+              "ruleLabel": false
+            }
+          }
+        },
+        {
+          "if": { "properties": { "tier": { "const": "little" } }, "required": ["tier"] },
+          "then": {
+            "description": "little tier (ages 4-6): NO READING anywhere - only pictures, numbers and symbols on the belt and on the buttons, and no order rounds. The spoken `say` carries the whole task.",
+            "properties": {
+              "type": { "not": { "const": "order" } },
+              "show": { "items": { "$ref": "#/$defs/littleToken" } },
+              "choices": {
+                "items": {
+                  "anyOf": [
+                    { "$ref": "#/$defs/number" },
+                    { "$ref": "#/$defs/picture" },
+                    { "type": "array", "items": { "anyOf": [{ "$ref": "#/$defs/number" }, { "$ref": "#/$defs/picture" }] } }
+                  ]
+                }
+              },
+              "answer": {
+                "anyOf": [
+                  { "$ref": "#/$defs/number" },
+                  { "$ref": "#/$defs/picture" },
+                  { "type": "array", "items": { "anyOf": [{ "$ref": "#/$defs/number" }, { "$ref": "#/$defs/picture" }] } }
+                ]
+              },
+              "words": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

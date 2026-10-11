@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Home tile: Loop Machine. A cheerful puzzle machine with a funnel, blinking lights and a dial;
+       its window shows a loop (red, yellow, red, ?) riding on a conveyor belt with rollers.
+       Original art for Little Loops. Transparent background (the orange tile colour shows through). -->
+  <ellipse cx="100" cy="192" rx="86" ry="6" fill="#2B2D42" opacity="0.18"/>
+  <g stroke="#2B2D42" stroke-linecap="round" stroke-linejoin="round">
+    <!-- funnel -->
+    <path d="M40 24 H92 L74 48 H58 Z" fill="#9B5DE5" stroke-width="5"/>
+    <rect x="34" y="13" width="64" height="13" rx="6.5" fill="#FFD166" stroke-width="5"/>
+    <path d="M52 34 H80" fill="none" stroke="#FFFFFF" stroke-width="4" opacity="0.7"/>
+    <!-- dial on a little stalk -->
+    <path d="M160 52 V44" fill="none" stroke-width="5"/>
+    <circle cx="160" cy="30" r="17" fill="#FFFFFF" stroke-width="5"/>
+    <path d="M160 30 L170 20" fill="none" stroke="#FF6B6B" stroke-width="5"/>
+    <circle cx="160" cy="30" r="3.5" fill="#2B2D42" stroke="none"/>
+    <!-- body -->
+    <rect x="12" y="50" width="176" height="104" rx="24" fill="#4CC9F0" stroke-width="6"/>
+    <path d="M30 60 Q24 60 24 68" fill="none" stroke="#FFFFFF" stroke-width="4" opacity="0.6"/>
+    <!-- lights -->
+    <circle cx="104" cy="67" r="7.5" fill="#FF6B6B" stroke-width="4"/>
+    <circle cx="126" cy="67" r="7.5" fill="#FFD166" stroke-width="4"/>
+    <circle cx="148" cy="67" r="7.5" fill="#3DDC97" stroke-width="4"/>
+    <circle cx="170" cy="67" r="7.5" fill="#FF8FAB" stroke-width="4"/>
+    <!-- window with the loop -->
+    <rect x="25" y="82" width="150" height="58" rx="13" fill="#FFFFFF" stroke-width="5"/>
+    <circle cx="50" cy="111" r="14" fill="#FF6B6B" stroke-width="4.5"/>
+    <polygon points="84,95 88.4,105.7 99.8,106.5 91,113.9 93.8,125 84,118.9 74.2,125 77,113.9 68.2,106.5 79.6,105.7" fill="#FFD166" stroke-width="4.5"/>
+    <circle cx="118" cy="111" r="14" fill="#FF6B6B" stroke-width="4.5"/>
+    <rect x="138" y="94" width="30" height="34" rx="7" fill="#9B5DE5" stroke-width="4.5"/>
+    <path d="M147 106 Q147 100 153 100 Q159 100 159 105.5 Q159 109 155 111 Q153 112 153 115" fill="none" stroke="#FFFFFF" stroke-width="4.5"/>
+    <circle cx="153" cy="121.5" r="2.6" fill="#FFFFFF" stroke="none"/>
+    <!-- conveyor belt with rollers -->
+    <rect x="8" y="156" width="184" height="28" rx="14" fill="#2B2D42" stroke-width="5"/>
+    <g fill="#B8BDD0" stroke="#5C5F7A" stroke-width="2.5">
+      <circle cx="30" cy="170" r="8"/>
+      <circle cx="58" cy="170" r="8"/>
+      <circle cx="86" cy="170" r="8"/>
+      <circle cx="114" cy="170" r="8"/>
+      <circle cx="142" cy="170" r="8"/>
+      <circle cx="170" cy="170" r="8"/>
+    </g>
+    <path d="M26 166 L34 174 M54 166 L62 174 M82 166 L90 174 M110 166 L118 174 M138 166 L146 174 M166 166 L174 174" fill="none" stroke="#5C5F7A" stroke-width="2.5"/>
+  </g>
+</svg>

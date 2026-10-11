@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- "Bolt" the robot — original character art for Little Loops -->
+  <g stroke="#2B2D42" stroke-linecap="round" stroke-linejoin="round">
+    <!-- arms (behind body) -->
+    <path d="M34 86 Q22 88 18 78" fill="none" stroke-width="5"/>
+    <path d="M86 86 Q99 84 102 72" fill="none" stroke-width="5"/>
+    <circle cx="17" cy="75" r="6" fill="#4CC9F0" stroke-width="3.5"/>
+    <circle cx="103" cy="69" r="6" fill="#4CC9F0" stroke-width="3.5"/>
+    <!-- wheels -->
+    <circle cx="44" cy="109" r="9" fill="#2B2D42" stroke-width="3"/>
+    <circle cx="76" cy="109" r="9" fill="#2B2D42" stroke-width="3"/>
+    <circle cx="44" cy="109" r="3" fill="#B8BDD0" stroke="none"/>
+    <circle cx="76" cy="109" r="3" fill="#B8BDD0" stroke="none"/>
+    <!-- body -->
+    <rect x="31" y="75" width="58" height="31" rx="11" fill="#FFD166" stroke-width="4"/>
+    <path d="M60 99 C51 93 52 84 57.5 86 C59 86.6 60 88.5 60 88.5 C60 88.5 61 86.6 62.5 86 C68 84 69 93 60 99 Z" fill="#FF6B6B" stroke-width="2.5"/>
+    <!-- neck -->
+    <rect x="51" y="68" width="18" height="8" rx="2" fill="#B8BDD0" stroke-width="3"/>
+    <!-- antenna -->
+    <path d="M60 25 L60 13" fill="none" stroke-width="4"/>
+    <circle cx="60" cy="10" r="6.5" fill="#FF6B6B" stroke-width="3.5"/>
+    <!-- ear bolts -->
+    <rect x="17" y="38" width="11" height="18" rx="4" fill="#FFD166" stroke-width="3.5"/>
+    <rect x="92" y="38" width="11" height="18" rx="4" fill="#FFD166" stroke-width="3.5"/>
+    <!-- head -->
+    <rect x="25" y="24" width="70" height="46" rx="17" fill="#4CC9F0" stroke-width="4"/>
+    <rect x="33" y="31" width="54" height="32" rx="12" fill="#E8FBFF" stroke-width="3"/>
+    <!-- face -->
+    <circle cx="49" cy="45" r="6.2" fill="#2B2D42" stroke="none"/>
+    <circle cx="71" cy="45" r="6.2" fill="#2B2D42" stroke="none"/>
+    <circle cx="51.2" cy="42.8" r="2.1" fill="#FFFFFF" stroke="none"/>
+    <circle cx="73.2" cy="42.8" r="2.1" fill="#FFFFFF" stroke="none"/>
+    <circle cx="40.5" cy="54" r="3.4" fill="#FF8FAB" stroke="none"/>
+    <circle cx="79.5" cy="54" r="3.4" fill="#FF8FAB" stroke="none"/>
+    <path d="M51 53.5 Q60 60.5 69 53.5" fill="none" stroke-width="3.2"/>
+  </g>
+</svg>

@@ -1,0 +1,43 @@
+{
+  "schema": "app-registry/1",
+  "modules": [
+    {
+      "id": "robot",
+      "title": "Robot Puzzles",
+      "status": "ready",
+      "entry": "js/modules/robot/robot.js",
+      "css": "js/modules/robot/robot.css",
+      "tile": { "art": "art/tiles/robot.svg", "color": "#4CC9F0" }
+    },
+    {
+      "id": "coloring",
+      "title": "Coloring",
+      "status": "ready",
+      "entry": "js/modules/coloring/coloring.js",
+      "css": "js/modules/coloring/coloring.css",
+      "tile": { "art": "art/tiles/coloring.svg", "color": "#FF8FAB" }
+    },
+    {
+      "id": "machine",
+      "title": "Loop Machine",
+      "status": "ready",
+      "entry": "js/modules/machine/machine.js",
+      "css": "js/modules/machine/machine.css",
+      "tile": { "art": "art/tiles/machine.svg", "color": "#FF9F1C" }
+    },
+    {
+      "id": "story",
+      "title": "Story Movie",
+      "status": "locked",
+      "lockedSay": "Story Movie is coming soon!",
+      "tile": { "art": "art/tiles/story.svg", "color": "#FFD166" }
+    },
+    {
+      "id": "builder",
+      "title": "Builder",
+      "status": "locked",
+      "lockedSay": "Builder is coming soon!",
+      "tile": { "art": "art/tiles/builder.svg", "color": "#06D6A0" }
+    }
+  ]
+}
