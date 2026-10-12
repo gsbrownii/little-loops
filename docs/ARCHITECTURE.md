@@ -93,11 +93,11 @@ remounting is cheap.
 | `ctx.id` | this module's id (`'robot'`) |
 | `ctx.entry` | this module's entry from `data/app.json` (`{ id, title, status, entry, css, tile }`) |
 | `ctx.params` | route segments after the module id: `#/robot/3` → `['3']` |
-| `ctx.instruct(text, {speak=true})` | set + speak the screen instruction (replay button repeats it; caption shows it) |
+| `ctx.instruct(text, {speak=true})` | set + speak the screen instruction (replay button repeats it; caption shows it). `text` may be an array of parts like `ctx.say`: `ctx.instruct([praise, "Tap the green arrow for the next puzzle!"])` |
 | `ctx.say(text, opts)` | speak without changing the replay text (feedback, praise). Returns Promise<bool> |
 | `ctx.chrome.setBack({icon:'home'\|'back', to:'#/x' \| fn, label})` / `setBack(null)` | top-left button. Default: home → `#/` |
 | `ctx.chrome.setActions([buttons])` | extra 64px round buttons in the top bar (left side, after back) |
-| `ctx.chrome.instruction` | the current instruction text (what the replay button speaks) |
+| `ctx.chrome.instruction` | the current instruction text, always a string (parts joined; the replay button says the parts) |
 | `ctx.sound.play(name)` | `tap select pick drop remove step bump tryAgain success fanfare fill locked unlock whoosh` |
 | `ctx.celebrate({big})` | confetti + success/fanfare sound; resolves when done (~1.5 s / ~2.4 s) |
 | `ctx.praise()` | random praise phrase ("Great job!") — speak it with `ctx.say` |
@@ -143,16 +143,40 @@ pass `{ interrupt: false }` to queue.
 
 **Recorded voice.** `js/core/speech.js` first looks each line up in the voice pack
 (`APP.voicePack` = `audio/emma/index.json`: normalized text → MP3 clip, recorded with Kokoro by
-`npm run voice`) and plays the clip on one shared `<audio>` element (unlocked on the start tap;
-Web Audio is the fallback). Lines without a clip use the device's text-to-speech, preferring a
-voice with the pack's accent, and are recorded in `speech.missing` (the smoke test fails on
-any). A grown-up can pick a device voice in settings instead. Rules for module authors:
+`npm run voice`) and plays the clips through a pool of 3 preloaded `<audio>` elements, all
+unlocked on the start tap (iOS lets an element play later only if it was started in a tap; the
+next part loads while the current one plays). Web Audio is the fallback if iOS refuses an
+element; it keeps only a few decoded clips and never starts a clip on a suspended context.
+Every wait has a limit (a clip that doesn't load or start in about 4 s, or doesn't end on time,
+counts as failed and the device voice says the rest; the element is paused so it can never
+start later), and an interrupt or `stop()` also cancels a line that is still loading. Lines
+asked for while the app is hidden are dropped (counted in `speech.stats.hidden`); when it is
+shown again the top bar repeats the current instruction.
+Lines without a clip use the device's text-to-speech, preferring a voice with the pack's
+accent. Every line passed to `say()` without a recording (spoken, queued or dropped by an
+interrupt) is recorded in `speech.unrecorded` (the ones actually spoken by the device voice
+also in `speech.missing`); the smoke test fails on any, and it taps the speaker button on every
+screen it checks. A grown-up can pick a device voice in settings instead.
+
+The service worker caches the pack's `index.json` and `audio/silence.mp3` with the app
+(all-or-nothing); only the clips are best-effort. So a partial clip download (slow first visit,
+app closed early) never loses the recorded voice offline: lines whose clips arrived play in
+Emma's voice, the rest use the device voice until a later online start fills them in.
+
+Rules for module authors:
 - Speak **fixed strings** (or data fields) so `tools/voice-lines.mjs` can find them: a literal
   that starts with a capital letter and ends with `.`, `!` or `?` is collected automatically.
+  Text that only looks like a sentence but is never spoken (settings notes, labels) gets a
+  trailing `// not spoken` comment on its line so it isn't recorded and shipped.
 - A line built from pieces (e.g. "Is it lake, cook, or cat?") must be passed as an array of
   **parts** — `ctx.say(['Is it', 'lake,', 'cook,', 'or cat?'])` — each part gets its own clip,
   and the collector must be able to enumerate every part (see `choicesParts`/`wordsParts` in
   `js/modules/machine/tokens.js`). Never interpolate numbers or names into one long string.
+  This includes the instruction: `ctx.instruct` takes the same parts arrays, and the replay
+  button says the same parts (`ctx.instruct([praise, 'Tap the green arrow for the next puzzle!'])`,
+  never `` ctx.instruct(`${praise} ${next}`) ``). `npm run validate` warns about a template literal
+  inside a speech call; a line whose results the collector does enumerate carries a trailing
+  `// voice: enumerated` comment.
 - After changing any spoken text: `npm run voice`, then `npm run precache`.
 
 ## Content is data

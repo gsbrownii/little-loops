@@ -470,9 +470,9 @@
   "file": "33f04ac95d55.mp3"
  },
  {
-  "key": "adds an icon to your home screen and works offline.",
-  "text": "Adds an icon to your home screen and works offline.",
-  "file": "e1370b926a36.mp3"
+  "key": "ago,",
+  "text": "ago,",
+  "file": "0f7ad2a173ac.mp3"
  },
  {
   "key": "ago.",
@@ -558,6 +558,11 @@
   "key": "antique,",
   "text": "antique,",
   "file": "b7b0a60f3816.mp3"
+ },
+ {
+  "key": "anyway,",
+  "text": "anyway,",
+  "file": "c5d308b9c644.mp3"
  },
  {
   "key": "anyway.",
@@ -1035,6 +1040,11 @@
   "file": "79529808d3d7.mp3"
  },
  {
+  "key": "comet,",
+  "text": "comet,",
+  "file": "11b9fc07abd7.mp3"
+ },
+ {
   "key": "comet.",
   "text": "comet.",
   "file": "83f263253bdb.mp3"
@@ -1285,9 +1295,19 @@
   "file": "77fb418b3aee.mp3"
  },
  {
+  "key": "dance,",
+  "text": "dance,",
+  "file": "bce980000e03.mp3"
+ },
+ {
   "key": "dance.",
   "text": "dance.",
   "file": "e11333194f3d.mp3"
+ },
+ {
+  "key": "day,",
+  "text": "day,",
+  "file": "bd0a3009ff0b.mp3"
  },
  {
   "key": "day.",
@@ -2175,11 +2195,6 @@
   "file": "62c64e16e4cf.mp3"
  },
  {
-  "key": "lets a child jump to any puzzle.",
-  "text": "Lets a child jump to any puzzle.",
-  "file": "d8943a47ec15.mp3"
- },
- {
   "key": "light blue!",
   "text": "Light blue!",
   "file": "30bb49f122b3.mp3"
@@ -2408,6 +2423,11 @@
   "key": "multiply the last number by two.",
   "text": "Multiply the last number by two.",
   "file": "94fc88d1784d.mp3"
+ },
+ {
+  "key": "museum,",
+  "text": "museum,",
+  "file": "15ba996b8515.mp3"
  },
  {
   "key": "museum.",
@@ -4240,11 +4260,6 @@
   "file": "9e8c63eeef04.mp3"
  },
  {
-  "key": "press and hold the button for 3 seconds.",
-  "text": "Press and hold the button for 3 seconds.",
-  "file": "3fa898ae1bd1.mp3"
- },
- {
   "key": "prime numbers divide evenly only by one and themselves. which prime comes next?",
   "text": "Prime numbers divide evenly only by one and themselves. Which prime comes next?",
   "file": "9bbc02ae68c4.mp3"
@@ -4380,11 +4395,6 @@
   "file": "3c08a1619570.mp3"
  },
  {
-  "key": "ready! tap to print.",
-  "text": "Ready! Tap to print.",
-  "file": "db652cdd2fb3.mp3"
- },
- {
   "key": "receive,",
   "text": "receive,",
   "file": "76fc36b9a2c5.mp3"
@@ -4455,11 +4465,6 @@
   "file": "d1f91eb23c01.mp3"
  },
  {
-  "key": "reset all progress? puzzle stars and saved pictures will be cleared.",
-  "text": "Reset all progress? Puzzle stars and saved pictures will be cleared.",
-  "file": "dc517b94e459.mp3"
- },
- {
   "key": "rhymes sound the same at the end. say each one!",
   "text": "Rhymes sound the same at the end. Say each one!",
   "file": "0e903db1657e.mp3"
@@ -4510,11 +4515,6 @@
   "file": "09c17555c613.mp3"
  },
  {
-  "key": "running as an app.",
-  "text": "Running as an app.",
-  "file": "c58150f5e7a1.mp3"
- },
- {
   "key": "sandcastles,",
   "text": "sandcastles,",
   "file": "0637624c9bba.mp3"
@@ -4533,11 +4533,6 @@
   "key": "saturday.",
   "text": "Saturday.",
   "file": "2366de995c06.mp3"
- },
- {
-  "key": "saved on this device only.",
-  "text": "Saved on this device only.",
-  "file": "12d5a74e4d47.mp3"
  },
  {
   "key": "say each word out loud. rhymes can be spelled differently!",
@@ -4788,6 +4783,11 @@
   "key": "song,",
   "text": "song,",
   "file": "1a8cf44cd676.mp3"
+ },
+ {
+  "key": "space,",
+  "text": "space,",
+  "file": "48ba42e5fa03.mp3"
  },
  {
   "key": "space.",
@@ -5155,11 +5155,6 @@
   "file": "30453be1c3a2.mp3"
  },
  {
-  "key": "this browser is not saving progress (private mode?).",
-  "text": "This browser is not saving progress (private mode?).",
-  "file": "86373499f5e1.mp3"
- },
- {
   "key": "this is how fast i talk.",
   "text": "This is how fast I talk.",
   "file": "8ce2b3ce4f8f.mp3"
@@ -5248,6 +5243,11 @@
   "key": "to,",
   "text": "to,",
   "file": "60986b789e7b.mp3"
+ },
+ {
+  "key": "together,",
+  "text": "together,",
+  "file": "95d517c73b45.mp3"
  },
  {
   "key": "together.",
@@ -5995,59 +5995,9 @@
   "file": "47aa292776f3.mp3"
  },
  {
-  "key": "you earned 1 gold star and 1 silver star!",
-  "text": "You earned 1 gold star and 1 silver star!",
-  "file": "bfa33dd8a29b.mp3"
- },
- {
-  "key": "you earned 1 gold star and 2 silver stars!",
-  "text": "You earned 1 gold star and 2 silver stars!",
-  "file": "55bdd8eea575.mp3"
- },
- {
-  "key": "you earned 1 gold star and 3 silver stars!",
-  "text": "You earned 1 gold star and 3 silver stars!",
-  "file": "92f118b44d72.mp3"
- },
- {
-  "key": "you earned 1 gold star and 4 silver stars!",
-  "text": "You earned 1 gold star and 4 silver stars!",
-  "file": "e6e21c384c8e.mp3"
- },
- {
-  "key": "you earned 1 gold star and 5 silver stars!",
-  "text": "You earned 1 gold star and 5 silver stars!",
-  "file": "2b2aee991766.mp3"
- },
- {
-  "key": "you earned 1 gold star and 6 silver stars!",
-  "text": "You earned 1 gold star and 6 silver stars!",
-  "file": "008d91c25630.mp3"
- },
- {
-  "key": "you earned 1 gold star and 7 silver stars!",
-  "text": "You earned 1 gold star and 7 silver stars!",
-  "file": "2c9bc61b4d69.mp3"
- },
- {
-  "key": "you earned 1 gold star and 8 silver stars!",
-  "text": "You earned 1 gold star and 8 silver stars!",
-  "file": "4d124d4031c0.mp3"
- },
- {
   "key": "you earned 1 gold star and 9 silver stars!",
   "text": "You earned 1 gold star and 9 silver stars!",
   "file": "f4a0fda62dc1.mp3"
- },
- {
-  "key": "you earned 1 gold star!",
-  "text": "You earned 1 gold star!",
-  "file": "e47ec06760ba.mp3"
- },
- {
-  "key": "you earned 1 silver star!",
-  "text": "You earned 1 silver star!",
-  "file": "52a68ec8d8bc.mp3"
  },
  {
   "key": "you earned 10 gold stars!",
@@ -6060,84 +6010,9 @@
   "file": "857c45dca4bd.mp3"
  },
  {
-  "key": "you earned 2 gold stars and 1 silver star!",
-  "text": "You earned 2 gold stars and 1 silver star!",
-  "file": "d094eed8ff92.mp3"
- },
- {
-  "key": "you earned 2 gold stars and 2 silver stars!",
-  "text": "You earned 2 gold stars and 2 silver stars!",
-  "file": "7208ba0d1e0c.mp3"
- },
- {
-  "key": "you earned 2 gold stars and 3 silver stars!",
-  "text": "You earned 2 gold stars and 3 silver stars!",
-  "file": "ec8e2cd55925.mp3"
- },
- {
-  "key": "you earned 2 gold stars and 4 silver stars!",
-  "text": "You earned 2 gold stars and 4 silver stars!",
-  "file": "6d7a3da70828.mp3"
- },
- {
-  "key": "you earned 2 gold stars and 5 silver stars!",
-  "text": "You earned 2 gold stars and 5 silver stars!",
-  "file": "1d21dab7874b.mp3"
- },
- {
-  "key": "you earned 2 gold stars and 6 silver stars!",
-  "text": "You earned 2 gold stars and 6 silver stars!",
-  "file": "76a1be1e4e76.mp3"
- },
- {
-  "key": "you earned 2 gold stars and 7 silver stars!",
-  "text": "You earned 2 gold stars and 7 silver stars!",
-  "file": "2329bfc1a3a0.mp3"
- },
- {
   "key": "you earned 2 gold stars and 8 silver stars!",
   "text": "You earned 2 gold stars and 8 silver stars!",
   "file": "dbe6a563c74e.mp3"
- },
- {
-  "key": "you earned 2 gold stars!",
-  "text": "You earned 2 gold stars!",
-  "file": "8bb439276645.mp3"
- },
- {
-  "key": "you earned 2 silver stars!",
-  "text": "You earned 2 silver stars!",
-  "file": "eddd0fdf000f.mp3"
- },
- {
-  "key": "you earned 3 gold stars and 1 silver star!",
-  "text": "You earned 3 gold stars and 1 silver star!",
-  "file": "cb28d5ce4f82.mp3"
- },
- {
-  "key": "you earned 3 gold stars and 2 silver stars!",
-  "text": "You earned 3 gold stars and 2 silver stars!",
-  "file": "2647e5897367.mp3"
- },
- {
-  "key": "you earned 3 gold stars and 3 silver stars!",
-  "text": "You earned 3 gold stars and 3 silver stars!",
-  "file": "b2efad9c74a0.mp3"
- },
- {
-  "key": "you earned 3 gold stars and 4 silver stars!",
-  "text": "You earned 3 gold stars and 4 silver stars!",
-  "file": "1dc75202e916.mp3"
- },
- {
-  "key": "you earned 3 gold stars and 5 silver stars!",
-  "text": "You earned 3 gold stars and 5 silver stars!",
-  "file": "c82bf8e84a71.mp3"
- },
- {
-  "key": "you earned 3 gold stars and 6 silver stars!",
-  "text": "You earned 3 gold stars and 6 silver stars!",
-  "file": "a03a463328f4.mp3"
  },
  {
   "key": "you earned 3 gold stars and 7 silver stars!",
@@ -6145,74 +6020,9 @@
   "file": "ba28a5e08fbb.mp3"
  },
  {
-  "key": "you earned 3 gold stars!",
-  "text": "You earned 3 gold stars!",
-  "file": "cf54ca6680b4.mp3"
- },
- {
-  "key": "you earned 3 silver stars!",
-  "text": "You earned 3 silver stars!",
-  "file": "a575123a41db.mp3"
- },
- {
-  "key": "you earned 4 gold stars and 1 silver star!",
-  "text": "You earned 4 gold stars and 1 silver star!",
-  "file": "1d38ff257819.mp3"
- },
- {
-  "key": "you earned 4 gold stars and 2 silver stars!",
-  "text": "You earned 4 gold stars and 2 silver stars!",
-  "file": "ab8d1a0f534e.mp3"
- },
- {
-  "key": "you earned 4 gold stars and 3 silver stars!",
-  "text": "You earned 4 gold stars and 3 silver stars!",
-  "file": "1138db507d2c.mp3"
- },
- {
-  "key": "you earned 4 gold stars and 4 silver stars!",
-  "text": "You earned 4 gold stars and 4 silver stars!",
-  "file": "df34868433bc.mp3"
- },
- {
-  "key": "you earned 4 gold stars and 5 silver stars!",
-  "text": "You earned 4 gold stars and 5 silver stars!",
-  "file": "91a1f417d559.mp3"
- },
- {
   "key": "you earned 4 gold stars and 6 silver stars!",
   "text": "You earned 4 gold stars and 6 silver stars!",
   "file": "0fb8043adf70.mp3"
- },
- {
-  "key": "you earned 4 gold stars!",
-  "text": "You earned 4 gold stars!",
-  "file": "bf6c69fb3b96.mp3"
- },
- {
-  "key": "you earned 4 silver stars!",
-  "text": "You earned 4 silver stars!",
-  "file": "771a522dbd9b.mp3"
- },
- {
-  "key": "you earned 5 gold stars and 1 silver star!",
-  "text": "You earned 5 gold stars and 1 silver star!",
-  "file": "680b71997460.mp3"
- },
- {
-  "key": "you earned 5 gold stars and 2 silver stars!",
-  "text": "You earned 5 gold stars and 2 silver stars!",
-  "file": "630438261f31.mp3"
- },
- {
-  "key": "you earned 5 gold stars and 3 silver stars!",
-  "text": "You earned 5 gold stars and 3 silver stars!",
-  "file": "c7c12580c850.mp3"
- },
- {
-  "key": "you earned 5 gold stars and 4 silver stars!",
-  "text": "You earned 5 gold stars and 4 silver stars!",
-  "file": "cd7c76340882.mp3"
  },
  {
   "key": "you earned 5 gold stars and 5 silver stars!",
@@ -6220,54 +6030,9 @@
   "file": "b1a98174d0d1.mp3"
  },
  {
-  "key": "you earned 5 gold stars!",
-  "text": "You earned 5 gold stars!",
-  "file": "432d1d35a6f6.mp3"
- },
- {
-  "key": "you earned 5 silver stars!",
-  "text": "You earned 5 silver stars!",
-  "file": "23d1a2afeab2.mp3"
- },
- {
-  "key": "you earned 6 gold stars and 1 silver star!",
-  "text": "You earned 6 gold stars and 1 silver star!",
-  "file": "c19b9382ba90.mp3"
- },
- {
-  "key": "you earned 6 gold stars and 2 silver stars!",
-  "text": "You earned 6 gold stars and 2 silver stars!",
-  "file": "52eb8241672d.mp3"
- },
- {
-  "key": "you earned 6 gold stars and 3 silver stars!",
-  "text": "You earned 6 gold stars and 3 silver stars!",
-  "file": "adc9fe7bac46.mp3"
- },
- {
   "key": "you earned 6 gold stars and 4 silver stars!",
   "text": "You earned 6 gold stars and 4 silver stars!",
   "file": "9c1bb95f8775.mp3"
- },
- {
-  "key": "you earned 6 gold stars!",
-  "text": "You earned 6 gold stars!",
-  "file": "6f0ad2c76dc0.mp3"
- },
- {
-  "key": "you earned 6 silver stars!",
-  "text": "You earned 6 silver stars!",
-  "file": "3e72a2ff95a2.mp3"
- },
- {
-  "key": "you earned 7 gold stars and 1 silver star!",
-  "text": "You earned 7 gold stars and 1 silver star!",
-  "file": "2917af5194b9.mp3"
- },
- {
-  "key": "you earned 7 gold stars and 2 silver stars!",
-  "text": "You earned 7 gold stars and 2 silver stars!",
-  "file": "42393992b818.mp3"
  },
  {
   "key": "you earned 7 gold stars and 3 silver stars!",
@@ -6275,49 +6040,14 @@
   "file": "d0d088b1e3b7.mp3"
  },
  {
-  "key": "you earned 7 gold stars!",
-  "text": "You earned 7 gold stars!",
-  "file": "e96e06116239.mp3"
- },
- {
-  "key": "you earned 7 silver stars!",
-  "text": "You earned 7 silver stars!",
-  "file": "063b20c67831.mp3"
- },
- {
-  "key": "you earned 8 gold stars and 1 silver star!",
-  "text": "You earned 8 gold stars and 1 silver star!",
-  "file": "1e7efab5ccf2.mp3"
- },
- {
   "key": "you earned 8 gold stars and 2 silver stars!",
   "text": "You earned 8 gold stars and 2 silver stars!",
   "file": "6ed0169757a7.mp3"
  },
  {
-  "key": "you earned 8 gold stars!",
-  "text": "You earned 8 gold stars!",
-  "file": "bfbd35e53c6e.mp3"
- },
- {
-  "key": "you earned 8 silver stars!",
-  "text": "You earned 8 silver stars!",
-  "file": "e8578d5edbe4.mp3"
- },
- {
   "key": "you earned 9 gold stars and 1 silver star!",
   "text": "You earned 9 gold stars and 1 silver star!",
   "file": "99b542b9f969.mp3"
- },
- {
-  "key": "you earned 9 gold stars!",
-  "text": "You earned 9 gold stars!",
-  "file": "9bc9716401e9.mp3"
- },
- {
-  "key": "you earned 9 silver stars!",
-  "text": "You earned 9 silver stars!",
-  "file": "4d152cade4cf.mp3"
  },
  {
   "key": "you solved every puzzle!",

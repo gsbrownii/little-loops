@@ -105,7 +105,10 @@ it works at any sub-path or on a custom domain.
 - **Android (Chrome):** open the site → **⋮** menu → **Install app** (or *Add to Home
   screen*). The grown-up settings screen also shows an **Install** button when the browser
   offers one.
-- Open it once online so everything is cached; then airplane mode is fine.
+- Open it once online and leave it on the start or home screen for a minute or two (on Wi-Fi: the
+  recorded voice is about 10 MB) so everything is cached; then airplane mode is fine. If it was
+  closed sooner, the app still works offline and any line whose recording did not arrive yet is
+  spoken by the device voice; the next online start downloads the rest.
 - Tip: iOS **Guided Access** or Android **screen pinning** keeps kids inside the app.
 
 ## Grown-up settings
@@ -160,35 +163,51 @@ draft story format already exists in `schemas/story.schema.json`.
 Everything the app says is pre-recorded in a natural voice (**Emma**, a British English voice
 from the free, open-source [Kokoro](https://github.com/thewh1teagle/kokoro-onnx) text-to-speech
 model), so it sounds the same on every device and works offline. The clips (about 1,300 short
-MP3s) live in `audio/emma/`. A line without a recording, such as a newly added puzzle, is
-spoken by the device's own voice until it is recorded, so new content never breaks.
+MP3s, about 10 MB) live in `audio/emma/`. A line without a recording, such as a newly added
+puzzle, is spoken by the device's own voice until it is recorded, so new content never breaks.
 
 **After changing anything the app says**, record the new lines (only new or changed lines are
-recorded), then refresh the offline cache:
+recorded, in the voice pack `js/config.js` points at, with that pack's voice and settings), then
+refresh the offline cache:
 ```bash
 npm run voice
 ```
 ```bash
 npm run precache
 ```
-`npm run validate` warns if any line is missing a recording.
+`npm run validate` warns if any line is missing a recording, or if clips are no longer used
+(the next `npm run voice` removes those).
 
-**One-time setup** on a new computer: Python 3.10+, about 400 MB, kept outside this folder in
-`%LOCALAPPDATA%\little-loops-voice` (set `LL_VOICE_HOME` to use another folder):
-```bash
-python -m venv "$LOCALAPPDATA/little-loops-voice/venv"
-```
-```bash
-"$LOCALAPPDATA/little-loops-voice/venv/Scripts/python" -m pip install kokoro-onnx soundfile lameenc
-```
+**One-time setup** on a new computer: Python 3.11, 3.12 or 3.13 (3.12 recorded the current
+pack; the pinned kokoro-onnx 0.6.1 does not install on 3.14+), about 400 MB, kept outside this
+folder (set `LL_VOICE_HOME` to use another folder). The exact package versions are pinned in
+`tools/voice/requirements.txt`, so new lines are pronounced like the old ones.
+- **Windows** (folder `%LOCALAPPDATA%\little-loops-voice`):
+  ```bash
+  py -3.12 -m venv "$LOCALAPPDATA/little-loops-voice/venv"
+  ```
+  ```bash
+  "$LOCALAPPDATA/little-loops-voice/venv/Scripts/python" -m pip install -r tools/voice/requirements.txt
+  ```
+- **macOS / Linux** (folder `~/.local/share/little-loops-voice`):
+  ```bash
+  python3.12 -m venv ~/.local/share/little-loops-voice/venv
+  ```
+  ```bash
+  ~/.local/share/little-loops-voice/venv/bin/python -m pip install -r tools/voice/requirements.txt
+  ```
+
 Then download `kokoro-v1.0.onnx` and `voices-v1.0.bin` from the kokoro-onnx
 [releases page](https://github.com/thewh1teagle/kokoro-onnx/releases) ("model-files-v1.0")
-into `%LOCALAPPDATA%\little-loops-voice\models\`.
+into the `models` folder next to `venv` (e.g. `%LOCALAPPDATA%\little-loops-voice\models\`).
 
-**A different voice:** run
-`npm run voice -- --voice af_heart --name Heart --lang en-us --out audio/heart`, point
-`voicePack` in `js/config.js` at `audio/heart/index.json`, delete the old folder, then run
-`npm run precache`.
+**A different voice:** record a complete new pack into its own folder, e.g.
+`npm run voice -- --voice af_heart --name Heart --lang en-us --out audio/heart` (about 45
+minutes), point `voicePack` in `js/config.js` at `audio/heart/index.json`, delete the old
+`audio/emma` folder, then run `npm run precache`. From then on a plain `npm run voice` records
+new lines into `audio/heart` with that voice. (`npm run voice` refuses to change the voice,
+language, speed or bitrate of an existing pack unless `--force` re-records every line, so one
+pack never mixes two voices.)
 
 ## Scripts
 
@@ -201,7 +220,7 @@ into `%LOCALAPPDATA%\little-loops-voice\models\`.
 | `npm run precache` | regenerate `sw.js`; run after every edit (to see it locally) and before every deploy |
 | `npm run precache:check` | fail if `sw.js` is out of date |
 | `npm run icons` | re-render the PNG icons from `icons/icon.svg` |
-| `npm run voice` | record any new spoken lines in the Emma voice (see [Voice](#voice)) |
+| `npm run voice` | record any new spoken lines in the voice pack set in `js/config.js` (Emma; see [Voice](#voice)) |
 | `npm run voice:check` | fail if any spoken line has no recording |
 | `npm test` | end-to-end smoke test in headless Chrome (all games, offline, sub-path, layouts) |
 | `node tools/render-coloring.mjs --sheet combos` | preview coloring art (writes `coloring-combos.png` to your temp folder and prints the path; never write previews into this folder, or they get uploaded) |

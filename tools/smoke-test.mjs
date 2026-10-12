@@ -1,26 +1,42 @@
 #!/usr/bin/env node
 // End-to-end smoke test in headless Chrome (tools/cdp.mjs). Zero dependencies.
 //
-//   node tools/smoke-test.mjs            # everything (~3-5 min)
+//   node tools/smoke-test.mjs            # everything (~7 min)
 //   node tools/smoke-test.mjs --quick    # skip the layout sweep and the offline/sub-path checks
+//   node tools/smoke-test.mjs --only voice   # only the sections whose function name contains "voice"
 //
 // Covers: start screen + home, parent gate -> settings, Robot Puzzles (drag, tap, repeat blocks,
 // a miss + hint, success, progress), Coloring (wizard, fill, undo, print via the gate), Loop Machine
 // (a full 10-round session in every tier incl. word-order rounds, wrong answers + hint), double-taps
 // across screen changes, recovery from failed downloads (registry, game code, stylesheet), a layout
 // sweep (no page scroll, every touch target >= 64px, an instruction on every screen) at phone and
-// tablet sizes in both orientations, offline mode via the service worker, the GitHub Pages sub-path,
-// and no console errors anywhere. Exit code 1 on any failure.
+// tablet sizes in both orientations, offline mode via the service worker (incl. Range answers and
+// the voice index cached with the app), the GitHub Pages sub-path, and no console errors anywhere.
+// Voice: every line said (and what the speaker button repeats) has a recording, read-aloud on,
+// nothing speaks while hidden, and the speech engine under stubbed failures (interrupts during
+// loading, stalled clips, refused <audio>, a suspended AudioContext, decoded-clip memory).
+// Exit code 1 on any failure.
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { launch } from './cdp.mjs';
 import { APP_ROOT } from './serve.mjs';
+import { speechKey } from '../js/core/speech.js';
+import { collectLines } from './voice-lines.mjs';
+import { wordsParts } from '../js/modules/machine/tokens.js';
+import { readSW } from './precache.mjs';
 
 const QUICK = process.argv.includes('--quick');
+const ONLY = process.argv.includes('--only') ? process.argv[process.argv.indexOf('--only') + 1] || '' : null; // e.g. --only Voice
 const readJSON = (p) => JSON.parse(fs.readFileSync(path.join(APP_ROOT, p), 'utf8').replace(/^﻿/, ''));
 const registry = readJSON('data/app.json');
 const levels = readJSON('data/robot/levels.json').levels;
 const machine = readJSON('data/machine/rounds.json');
+const voicePackPath = (await import(pathToFileURL(path.join(APP_ROOT, 'js/config.js')).href)).APP.voicePack;
+const packLines = readJSON(voicePackPath).lines || {};
+const SPEECH = "import(new URL('js/core/speech.js', document.baseURI).href).then((m) => m.speech)";
+const notSpeaking = (b, timeout = 15000) => b.waitFor(`${SPEECH}.then((s) => !s.speaking)`, { timeout }).catch(() => {});
 
 let failures = 0;
 let passes = 0;
@@ -31,13 +47,26 @@ const section = (t) => console.log(`\n${t}`);
 
 // Console noise we accept (none expected today; keep the list explicit).
 const BENIGN = [/favicon\.ico/];
-/** Recorded voice: no spoken line fell back to the device voice, and clips really played. */
-async function voiceCheck(b, where, { expectClips = true } = {}) {
+/**
+ * Recorded voice: no line passed to speech (spoken, queued or dropped by an interrupt) lacks a
+ * recording, and clips really played. First taps the speaker button, so what replay says (the
+ * screen's instruction) is covered too.
+ */
+async function voiceCheck(b, where, { expectClips = true, replay = true } = {}) {
+  if (replay) {
+    await b.waitFor(TAPS_OK, { timeout: 5000 }).catch(() => {});
+    const can = await b.eval("(() => { const r = document.querySelector('.topbar-replay'); return !!r && !r.hidden && r.getBoundingClientRect().width > 0; })()");
+    if (can) {
+      await b.tap('.topbar-replay', { wait: 300 });
+      await notSpeaking(b);
+    }
+  }
   await b.sleep(400);
   const v = await b.eval(`import(new URL('js/core/speech.js', document.baseURI).href).then((m) => ({
-    pack: !!m.speech.packInfo(), missing: [...m.speech.missing], stats: { ...m.speech.stats } }))`);
+    pack: !!m.speech.packInfo(), missing: [...m.speech.missing], unrecorded: [...m.speech.unrecorded], stats: { ...m.speech.stats } }))`);
   if (!v.pack) { fail(`voice pack loaded (${where})`); return; }
-  check(v.missing.length === 0, `every spoken line has a recording (${where})`, v.missing.slice(0, 4).map((t) => JSON.stringify(t)).join(', '));
+  const gaps = [...new Set([...v.missing, ...v.unrecorded])];
+  check(gaps.length === 0, `every spoken line has a recording (${where})`, gaps.slice(0, 4).map((t) => JSON.stringify(t)).join(', '));
   if (expectClips) check(v.stats.started > 0 && v.stats.clipErrors === 0 && v.stats.device === 0, `recorded voice plays (${where})`, JSON.stringify(v.stats));
 }
 
@@ -67,6 +96,20 @@ async function go(b, hash, screen) {
 }
 
 const storage = (b) => b.eval("JSON.parse(localStorage.getItem('littleloops:v1') || '{}')");
+
+// Pretend the app went to the background / came back (speech.js only reads document.hidden).
+const HIDE_PAGE = `(() => {
+  Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+  document.dispatchEvent(new Event('visibilitychange'));
+  return true;
+})()`;
+const SHOW_PAGE = `(() => {
+  delete document.hidden;
+  delete document.visibilityState;
+  document.dispatchEvent(new Event('visibilitychange'));
+  return true;
+})()`;
 
 // A puzzle stays locked until the one before it is solved, also when opened by URL. Tests that
 // jump straight to a later level turn on the grown-up setting "Unlock all puzzle levels" first.
@@ -163,6 +206,36 @@ async function testRobot() {
     await b.tap('.rb-play');
     await b.waitFor("!!document.querySelector('.rb-win')", { timeout: 15000 }).then(() => pass('level 1 solved by dragging'), () => fail('level 1 solved by dragging'));
     check((await storage(b)).robot?.done?.[levels[0].id] === true, 'level 1 progress saved');
+    // The speaker button after a win repeats "<praise> Tap the green arrow for the next puzzle!"
+    // as its two recordings (never one joined line for the device voice).
+    await notSpeaking(b);
+    const winCaption = await b.eval("document.querySelector('.topbar-caption').textContent");
+    const before = await b.eval(`${SPEECH}.then((s) => ({ ...s.stats }))`);
+    await tapsOk(b);
+    await b.tap('.topbar-replay', { wait: 300 });
+    await notSpeaking(b);
+    const after = await b.eval(`${SPEECH}.then((s) => ({ stats: { ...s.stats }, unrecorded: [...s.unrecorded] }))`);
+    check(/Tap the green arrow/.test(winCaption) && after.stats.started >= before.started + 2 && after.stats.device === before.device
+      && !after.unrecorded.some((k) => /green arrow/.test(k)), 'replay after a win plays the recorded praise + next-puzzle lines', `${winCaption} ${JSON.stringify({ before, after })}`);
+    // Nothing talks while the app is hidden: lines a game timer asks for then are dropped, and
+    // the instruction is said again on return.
+    await go(b, '#/robot', 'robot');
+    await go(b, '#/robot/1', 'robot');
+    await b.tap(`.rb-pal[data-card="${card}"]`, { wait: 250 });
+    check(!(await b.eval("!!document.querySelector('.rb-win')")), 'level 1 opens fresh (no win card yet)');
+    await b.tap('.rb-play', { wait: 0 });
+    await b.eval(HIDE_PAGE);
+    const hidden0 = await b.eval(`${SPEECH}.then((s) => ({ ...s.stats }))`);
+    const won = await b.waitFor("!!document.querySelector('.rb-win')", { timeout: 15000 }).then(() => true, () => false);
+    await b.sleep(3000); // the win line (after ~0.75 s) and the queued next-puzzle line
+    const hidden1 = await b.eval(`${SPEECH}.then((s) => ({ ...s.stats }))`);
+    check(won && hidden1.started === hidden0.started && hidden1.device === hidden0.device && hidden1.hidden >= hidden0.hidden + 2,
+      'nothing speaks while the app is hidden (the win lines are dropped)', JSON.stringify({ won, hidden0, hidden1 }));
+    await b.eval(SHOW_PAGE);
+    await b.sleep(800);
+    const shown = await b.eval(`${SPEECH}.then((s) => ({ ...s.stats }))`);
+    check(shown.started > hidden1.started, 'back from hidden: the instruction is said again', JSON.stringify({ hidden1, shown }));
+    await notSpeaking(b);
     // A wrong program twice -> robot stays put, then the hint appears (level 2)
     await go(b, '#/robot/2', 'robot');
     const wrongCard = ['up', 'down', 'left', 'right'].find((c) => levels[1].cards.includes(c) && c !== levels[1].solution[0]) || levels[1].cards[0];
@@ -296,6 +369,9 @@ async function testMachine() {
   const b = await launch({ width: 390, height: 844, touch: true });
   try {
     await start(b);
+    // "Read word answers aloud" on: the read-aloud lines (answer choices, and word-order cards in
+    // their scrambled order) are said too, so the voice check covers them.
+    await b.eval("import('./js/core/storage.js').then((m) => { m.storage.set('machine.readAloud', true); return true; })");
     const tiers = machine.tiers.map((t) => t.id);
     for (let i = 0; i < tiers.length; i++) {
       await go(b, '#/machine', 'machine');
@@ -389,6 +465,32 @@ async function testOffline() {
       }
       check(bad.length === 0, `all games open offline (${base})`, bad.join(','));
       await voiceCheck(b, `offline ${base}`); // clips must play from the offline cache (range requests)
+      // The voice pack's index and the unlock clip are cached with the app (core, no ?v=), and
+      // the worker answers lookups exactly (a ?query on a core file still finds it).
+      const sample = Object.values(packLines)[0];
+      const errorsBefore = b.errors.length;
+      const sw = await b.eval(`(async () => {
+        const names = (await caches.keys()).filter((n) => n.startsWith('little-loops-'));
+        const keys = names.length ? (await (await caches.open(names[0])).keys()).map((r) => r.url) : [];
+        const abs = (p) => new URL(p, document.baseURI).href;
+        const q = await fetch(abs('data/app.json?x=1')).then((r) => r.status, () => 0);
+        const clip = abs(${JSON.stringify(`${path.posix.dirname(voicePackPath)}/${sample}`)});
+        const size = (await (await fetch(clip)).arrayBuffer()).byteLength;
+        const range = {};
+        for (const h of ['bytes=0-', 'Bytes=0-1', 'bytes=-100', 'bytes=0-1,5-6', 'items=0-1', 'bytes=100-50', 'bytes=' + size + '-', 'bytes=-0']) {
+          const r = await fetch(clip, { headers: { Range: h } });
+          range[h] = r.status + ':' + (await r.arrayBuffer()).byteLength;
+        }
+        return { index: keys.includes(abs(${JSON.stringify(voicePackPath)})), silence: keys.includes(abs('audio/silence.mp3')), q, size, range };
+      })()`);
+      check(sw.index && sw.silence, `voice index + silence.mp3 are cached with the app (${base})`, JSON.stringify(sw));
+      check(sw.q === 200, `a core file with a ?query is served offline (${base})`, String(sw.q));
+      const want = { 'bytes=0-': `206:${sw.size}`, 'Bytes=0-1': '206:2', 'bytes=-100': '206:100', 'bytes=0-1,5-6': `200:${sw.size}`, 'items=0-1': `200:${sw.size}`, 'bytes=100-50': `200:${sw.size}`, [`bytes=${sw.size}-`]: '416:0', 'bytes=-0': '416:0' };
+      const wrong = Object.entries(want).filter(([h, v]) => sw.range[h] !== v).map(([h, v]) => `${h} -> ${sw.range[h]} (want ${v})`);
+      check(wrong.length === 0, `offline Range requests answered like the web server (${base})`, wrong.join('; '));
+      // The two 416 answers above are logged by Chrome as failed loads; they were asked for.
+      await b.sleep(300);
+      for (let i = b.errors.length - 1; i >= errorsBefore; i--) if (/status of 416/.test(b.errors[i])) b.errors.splice(i, 1);
       await b.offline(false);
       checkErrors(b, `offline ${base}`);
     } finally { await b.close(); }
@@ -494,9 +596,265 @@ async function testRobustness() {
 }
 
 // ---------------------------------------------------------------------------------------------
+async function testVoiceStatic() {
+  section('Voice coverage (static)');
+  // Word-order read-aloud lists the cards in scrambled order: every word mid-list and last.
+  const gaps = [];
+  for (const r of machine.rounds) {
+    if (r.type !== 'order' || !Array.isArray(r.words)) continue;
+    const [intro, ...listed] = wordsParts(r.words);
+    for (const t of [intro, ...listed.flatMap((p) => [`${p.slice(0, -1)},`, `${p.slice(0, -1)}.`])]) {
+      if (!packLines[speechKey(t)]) gaps.push(`${r.id}: ${t}`);
+    }
+  }
+  check(gaps.length === 0, 'every word-order card is recorded mid-list and last', gaps.slice(0, 6).join(', '));
+  // A coloring item without `say` is spoken as "<name>!" (parts.js sayOf): the collector must agree.
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'll-voice-'));
+  try {
+    fs.cpSync(path.join(APP_ROOT, 'data'), path.join(tmp, 'data'), { recursive: true });
+    fs.cpSync(path.join(APP_ROOT, 'js'), path.join(tmp, 'js'), { recursive: true });
+    const f = path.join(tmp, 'data/coloring/animals.json');
+    const doc = JSON.parse(fs.readFileSync(f, 'utf8').replace(/^﻿/, ''));
+    delete doc.items[0].say;
+    fs.writeFileSync(f, JSON.stringify(doc));
+    const keys = new Set(collectLines(tmp).map((l) => l.key));
+    const want = speechKey(`${doc.items[0].name}!`);
+    check(keys.has(want), 'a coloring item without "say" is collected as "<name>!"', want);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+  // The service worker caches the pack index and the unlock clip with the app (all-or-nothing).
+  const listed = readSW(fs.readFileSync(path.join(APP_ROOT, 'sw.js'), 'utf8')).urls;
+  check(listed.includes(voicePackPath) && listed.includes('audio/silence.mp3'), 'sw.js precaches the voice index and silence.mp3 as core files', voicePackPath);
+}
+
+// Page-side probes for the voice engine: which clip each Web Audio source / <audio> play() was
+// for, when the fallback fetched a clip, decoded buffers (weakly), and an optional refusal of
+// <audio> play() (the iOS NotAllowedError case) via window.__blockPlay.
+const VOICE_HOOK = `(() => {
+  if (window.__vt) return true;
+  const T = window.__vt = { starts: [], plays: [], fetches: [], decodes: 0, refs: [], els: new Set() };
+  const tag = new WeakMap();
+  const file = (u) => String(u || '').split('?')[0].split('/').pop();
+  const origFetch = window.fetch;
+  window.fetch = async function (input, init) {
+    const url = typeof input === 'string' ? input : input.url;
+    if (!/\\.mp3/.test(url)) return origFetch.call(this, input, init);
+    T.fetches.push(file(url));
+    if (window.__onClipFetch) window.__onClipFetch(file(url));
+    const res = await origFetch.call(this, input, init);
+    const buf = await res.arrayBuffer();
+    tag.set(buf, file(url));
+    return { ok: res.ok, status: res.status, arrayBuffer: () => Promise.resolve(buf) };
+  };
+  const BAC = window.BaseAudioContext || window.AudioContext;
+  const origDecode = BAC.prototype.decodeAudioData;
+  BAC.prototype.decodeAudioData = function (buf, ok, bad) {
+    const f = tag.get(buf);
+    return origDecode.call(this, buf, (ab) => { if (f) tag.set(ab, f); T.decodes++; T.refs.push(new WeakRef(ab)); if (ok) ok(ab); }, bad);
+  };
+  const origStart = AudioBufferSourceNode.prototype.start;
+  AudioBufferSourceNode.prototype.start = function (...a) {
+    T.starts.push({ file: (this.buffer && tag.get(this.buffer)) || '', t: performance.now() });
+    return origStart.apply(this, a);
+  };
+  const origPlay = HTMLMediaElement.prototype.play;
+  HTMLMediaElement.prototype.play = function () {
+    T.els.add(this);
+    T.plays.push({ file: file(this.src), t: performance.now() });
+    if (window.__blockPlay && !/silence/.test(this.src)) return Promise.reject(new DOMException('refused', 'NotAllowedError'));
+    return origPlay.call(this);
+  };
+  T.audible = () => [...T.els].filter((el) => !el.paused && !el.ended).map((el) => file(el.src));
+  return true;
+})()`;
+
+async function testVoiceEngine() {
+  section('Voice engine: interrupts, stalls and fallbacks (stubbed, deterministic)');
+  // Distinct recorded lines nobody else says during this test (Loop Machine round questions).
+  const seen = new Set();
+  const spare = [];
+  for (const r of machine.rounds) {
+    const k = r.say && speechKey(r.say);
+    if (!k || seen.has(k) || !packLines[k]) continue;
+    seen.add(k);
+    spare.push({ text: r.say, file: packLines[k] });
+  }
+  const take = (n) => spare.splice(0, n);
+  if (spare.length < 45) { fail(`enough spare recorded lines for the voice engine test (${spare.length})`); return; }
+  const J = JSON.stringify;
+  const b = await launch({ width: 1024, height: 768, touch: true });
+  // Clip requests can be held back (a stalled network) with the DevTools Fetch domain.
+  const paused = [];
+  b.on('Fetch.requestPaused', (p) => paused.push(p.requestId));
+  const hold = (files) => b.send('Fetch.enable', { patterns: files.map((f) => ({ urlPattern: `*${f}*`, requestStage: 'Request' })) });
+  const release = async () => {
+    for (const id of paused.splice(0)) await b.send('Fetch.continueRequest', { requestId: id }).catch(() => {});
+    await b.send('Fetch.disable').catch(() => {});
+  };
+  try {
+    // No service worker and no HTTP cache: every clip load really goes to the (holdable) network.
+    await b.send('Page.addScriptToEvaluateOnNewDocument', { source: 'delete Navigator.prototype.serviceWorker;' });
+    await b.send('Network.setCacheDisabled', { cacheDisabled: true });
+    await start(b);
+    await b.eval(VOICE_HOOK);
+    await b.waitFor(`${SPEECH}.then((s) => !!s.packInfo())`, { timeout: 10000 });
+    await notSpeaking(b);
+
+    // 1. Web Audio fallback (<audio> refused): a line interrupted while its clip is being fetched
+    //    and decoded never starts afterwards, and the new line starts at once.
+    for (const mode of ['say', 'stop']) {
+      const [A, B] = take(2);
+      const r = await b.eval(`(async () => {
+        const sp = await ${SPEECH}; const T = window.__vt; T.starts.length = 0;
+        window.__blockPlay = true;
+        let tInt = 0;
+        window.__onClipFetch = (f) => {
+          if (f !== ${J(A.file)} || tInt) return;
+          setTimeout(() => { tInt = performance.now(); ${mode === 'say' ? `sp.say(${J(B.text)})` : 'sp.stop()'}; }, 0);
+        };
+        await sp.say(${J(A.text)});
+        await new Promise((r) => setTimeout(r, 2500));
+        window.__onClipFetch = null;
+        window.__blockPlay = false;
+        const startA = T.starts.find((s) => s.file === ${J(A.file)});
+        const startB = T.starts.find((s) => s.file === ${J(B.file)});
+        const res = { interrupted: tInt > 0, aStartedAfter: startA ? Math.round(startA.t - tInt) : null, bAfter: startB ? Math.round(startB.t - tInt) : null, speaking: sp.speaking };
+        sp.stop();
+        return res;
+      })()`);
+      if (mode === 'say') check(r.interrupted && r.aStartedAfter === null && r.bAfter !== null && r.bAfter < 500, 'Web Audio fallback: an interrupted line never starts later; the new line starts at once', J(r));
+      else check(r.interrupted && r.aStartedAfter === null, 'Web Audio fallback: stop() during fetch/decode keeps the line silent', J(r));
+    }
+
+    // 2. <audio> clip that never loads: stop() + the next screen's line starts at once (not after
+    //    the 4 s load timeout) and the speaker glows while it plays.
+    {
+      const [A, B] = take(2);
+      await hold([A.file]);
+      const r = await b.eval(`(async () => {
+        const sp = await ${SPEECH}; const T = window.__vt; T.plays.length = 0;
+        sp.say(${J(A.text)});
+        await new Promise((r) => setTimeout(r, 300));
+        const t0 = performance.now();
+        sp.stop();
+        const pB = sp.say(${J(B.text)});
+        await new Promise((r) => setTimeout(r, 250));
+        const speaking = sp.speaking;
+        const glow = !!document.querySelector('.topbar-replay.is-speaking');
+        const end = performance.now() + 6000;
+        while (!T.plays.some((p) => p.file === ${J(B.file)}) && performance.now() < end) await new Promise((r) => setTimeout(r, 20));
+        const playB = T.plays.find((p) => p.file === ${J(B.file)});
+        await pB;
+        return { bAfter: playB ? Math.round(playB.t - t0) : null, speaking, glow };
+      })()`);
+      await release();
+      check(r.bAfter !== null && r.bAfter < 500 && r.speaking && r.glow, 'a clip stuck loading does not hold up the next line (stop + say)', J(r));
+    }
+
+    // 3. <audio> clip whose data never comes: after the time limits the device voice says the
+    //    line, and when the data does arrive later the clip stays silent (no double speech), and
+    //    stop() + the next line leave exactly one clip playing.
+    {
+      const [A, B] = take(2);
+      await hold([A.file]);
+      const before = await b.eval(`${SPEECH}.then((s) => s.stats.clipErrors)`);
+      await b.eval(`${SPEECH}.then((s) => { s.say(${J(A.text)}); return true; })`);
+      const gaveUp = await b.waitFor(`${SPEECH}.then((s) => s.stats.clipErrors > ${before})`, { timeout: 12000 }).then(() => true, () => false);
+      await release();
+      await b.sleep(1500);
+      const late = await b.eval('window.__vt.audible()');
+      await b.eval(`${SPEECH}.then((s) => { s.stop(); s.say(${J(B.text)}); return true; })`);
+      await b.sleep(500);
+      const next = await b.eval('window.__vt.audible()');
+      check(gaveUp && !late.includes(A.file), 'a clip that loads too late never plays over the fallback', J({ gaveUp, late }));
+      check(next.length === 1 && next[0] === B.file, 'stop() + the next line: only that line plays', J(next));
+      await b.eval(`${SPEECH}.then((s) => { s.stop(); return true; })`);
+    }
+
+    // 4. Web Audio fallback on a context that can't run (iOS 'interrupted' after a call, or a
+    //    refused resume): no line hangs, queued lines still get their turn, the glow goes off.
+    {
+      const [A, B] = take(2);
+      const r = await b.eval(`(async () => {
+        const sp = await ${SPEECH}; const T = window.__vt; T.starts.length = 0;
+        const ac = (await import(new URL('js/core/sound.js', document.baseURI).href)).audioContext();
+        const proto = Object.getPrototypeOf(ac);
+        const resume = proto.resume;
+        proto.resume = function () { return new Promise(() => {}); };
+        window.__blockPlay = true;
+        try {
+          await ac.suspend();
+          const before = { ...sp.stats };
+          const t0 = performance.now();
+          const all = Promise.all([sp.say(${J(A.text)}), sp.say(${J(B.text)}, { interrupt: false })]);
+          const settled = await Promise.race([all.then(() => true), new Promise((r) => setTimeout(() => r(false), 25000))]);
+          await new Promise((r) => setTimeout(r, 100));
+          return { settled, ms: Math.round(performance.now() - t0), speaking: sp.speaking, glow: !!document.querySelector('.topbar-replay.is-speaking'),
+            clipErrors: sp.stats.clipErrors - before.clipErrors, sourcesStarted: T.starts.filter((s) => s.file === ${J(A.file)} || s.file === ${J(B.file)}).length };
+        } finally {
+          proto.resume = resume;
+          window.__blockPlay = false;
+          await ac.resume().catch(() => {});
+          sp.stop();
+        }
+      })()`);
+      check(r.settled && !r.speaking && !r.glow && r.clipErrors >= 1 && r.sourcesStarted === 0, 'Web Audio fallback on a suspended context: lines finish (device voice), nothing hangs', J(r));
+    }
+
+    // 5. Web Audio fallback memory: only a few decoded clips are kept, and a replay of the last
+    //    one is instant (no new download).
+    {
+      const lines = take(30);
+      const n = await b.eval(`(async () => {
+        const sp = await ${SPEECH}; const T = window.__vt; T.refs.length = 0;
+        window.__blockPlay = true;
+        for (const t of ${J(lines.map((l) => l.text))}) {
+          const d0 = T.decodes;
+          sp.say(t);
+          const end = performance.now() + 5000;
+          while (T.decodes === d0 && performance.now() < end) await new Promise((r) => setTimeout(r, 15));
+        }
+        sp.stop();
+        return T.refs.length;
+      })()`);
+      await b.sleep(300);
+      await b.send('HeapProfiler.collectGarbage').catch(() => {});
+      await b.sleep(200);
+      await b.send('HeapProfiler.collectGarbage').catch(() => {});
+      const last = lines[lines.length - 1];
+      const r = await b.eval(`(async () => {
+        const sp = await ${SPEECH}; const T = window.__vt;
+        const alive = T.refs.filter((w) => !!w.deref()).length;
+        const fetched = T.fetches.filter((f) => f === ${J(last.file)}).length;
+        T.starts.length = 0;
+        const p = sp.say(${J(last.text)});
+        const end = performance.now() + 3000;
+        while (!T.starts.some((s) => s.file === ${J(last.file)}) && performance.now() < end) await new Promise((r) => setTimeout(r, 15));
+        const replayed = T.starts.some((s) => s.file === ${J(last.file)});
+        const refetched = T.fetches.filter((f) => f === ${J(last.file)}).length - fetched;
+        sp.stop();
+        window.__blockPlay = false;
+        await p;
+        return { alive, replayed, refetched };
+      })()`);
+      check(n === lines.length && r.alive <= 18, 'Web Audio fallback keeps at most ~16 decoded clips', J({ decoded: n, ...r }));
+      check(r.replayed && r.refetched === 0, 'Web Audio fallback replays a recent clip without downloading it again', J(r));
+    }
+    const errs = b.errors.filter((e) => !BENIGN.some((re) => re.test(e)) && !/ERR_|net::|Failed to load resource/.test(e));
+    check(errs.length === 0, 'no console errors (voice engine)', errs.slice(0, 5).join(' | '));
+    b.errors.length = 0;
+  } finally {
+    await release().catch(() => {});
+    await b.close();
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
 const t0 = Date.now();
 console.log('Little Loops smoke test');
-for (const t of [testCore, testRobot, testColoring, testMachine, testRobustness, ...(QUICK ? [] : [testLayouts, testOffline])]) {
+const ALL = [testVoiceStatic, testCore, testRobot, testColoring, testMachine, testRobustness, testVoiceEngine, ...(QUICK ? [] : [testLayouts, testOffline])];
+for (const t of ONLY != null ? ALL.filter((x) => x.name.toLowerCase().includes(ONLY.toLowerCase())) : ALL) {
   try { await t(); } catch (err) { fail(`${t.name} crashed: ${err.message}`); }
 }
 console.log(`\n${failures ? 'FAILED' : 'PASSED'}: ${passes} passed, ${failures} failed (${Math.round((Date.now() - t0) / 1000)} s)`);

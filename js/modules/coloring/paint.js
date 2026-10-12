@@ -110,7 +110,7 @@ export function mountPaint(root, ctx, parts, note = {}) {
     });
     if (speak) {
       ctx.sound.play('pick');
-      ctx.say(`${PALETTE[i].name}!`);
+      ctx.say(`${PALETTE[i].name}!`); // voice: enumerated (colour names)
       try { ctx.store.set(KEY_COLOR, PALETTE[i].hex); } catch { /* storage is best-effort */ }
     }
   }

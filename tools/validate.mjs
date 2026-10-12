@@ -918,10 +918,83 @@ export async function runAll({ root = REPO_ROOT } = {}) {
       s.status = 'SKIP'; s.summary = 'not checked'; s.warnings.push(`could not load tools/voice-lines.mjs: ${err && err.message}`); return;
     }
     const r = await mod.checkVoice(root);
+    // The service worker must cache the pack's index and the iOS unlock clip WITH the app
+    // (all-or-nothing core entries, no ?v=), and look files up exactly (ERRORS: offline voice).
+    const swFile = path.join(root, 'sw.js');
+    if (fs.existsSync(swFile)) {
+      const swText = fs.readFileSync(swFile, 'utf8');
+      try {
+        const { readSW } = await import(pathToFileURL(path.join(HERE, 'precache.mjs')).href);
+        const listed = readSW(swText).urls;
+        for (const f of [r.pack, 'audio/silence.mp3']) {
+          if (!fs.existsSync(path.join(root, f))) continue;
+          if (!listed.includes(f)) s.errors.push(`sw.js must precache "${f}" as a core entry (without ?v=): a partial voice download would otherwise lose the whole recorded voice offline (tools/precache.mjs isMedia)`);
+        }
+      } catch (err) {
+        s.warnings.push(`could not read the sw.js precache list: ${err && err.message}`);
+      }
+      if (/\bignoreSearch\s*:\s*true/.test(swText)) s.errors.push('sw.js uses ignoreSearch: true. Chromium then scans the whole cache (1300+ entries) on every request; look entries up by their exact precached URL (keyFor) instead');
+    }
     if (!r.name) { s.warnings.push(`no voice pack at ${r.pack}: the device voice says everything (run npm run voice)`); s.summary = 'no voice pack'; return; }
     s.summary = `${r.name}: ${r.total - r.missing.length} of ${r.total} line(s) recorded`;
     if (r.missing.length) {
       s.warnings.push(`${r.missing.length} line(s) have no recording and will use the device voice (run npm run voice, then npm run precache), e.g. ${r.missing.slice(0, 3).map((l) => JSON.stringify(l.text)).join(', ')}`);
+    }
+    let idx = null;
+    try { idx = JSON.parse(fs.readFileSync(path.join(root, r.pack), 'utf8')); } catch { idx = null; }
+    const have = new Set(Object.keys((idx && idx.lines) || {}));
+    // Word-order read-aloud ("The words are: ago, Dinosaurs, ...") lists the cards in scrambled
+    // order, so every word is needed both mid-list ("ago,") and last ("ago."). Checked from the
+    // rounds directly, so a gap in the collector can't hide it.
+    try {
+      const { wordsParts } = await import(pathToFileURL(path.join(root, 'js/modules/machine/tokens.js')).href);
+      const { speechKey } = await import(pathToFileURL(path.join(root, 'js/core/speech.js')).href);
+      const rounds = JSON.parse(fs.readFileSync(path.join(root, 'data/machine/rounds.json'), 'utf8').replace(/^﻿/, '')).rounds || [];
+      const gaps = new Set();
+      for (const rd of rounds) {
+        if (!rd || rd.type !== 'order' || !Array.isArray(rd.words)) continue;
+        const [intro, ...listed] = wordsParts(rd.words);
+        for (const t of [intro, ...listed.flatMap((p) => [`${p.slice(0, -1)},`, `${p.slice(0, -1)}.`])]) {
+          if (!have.has(speechKey(t))) gaps.add(t);
+        }
+      }
+      if (gaps.size) s.warnings.push(`${gaps.size} word-order read-aloud part(s) have no recording (the whole "The words are: ..." line then uses the device voice), e.g. ${[...gaps].slice(0, 5).map((t) => JSON.stringify(t)).join(', ')}: run npm run voice`);
+    } catch (err) {
+      s.warnings.push(`could not check the word-order read-aloud parts: ${err && err.message}`);
+    }
+    // A line built with a template literal right inside a speech call is one long string the
+    // collector can't enumerate (it gets the device voice). Pass parts instead, e.g.
+    // ctx.instruct([line, SAY.next]); mark a line whose results ARE enumerated in
+    // tools/voice-lines.mjs with a trailing `// voice: enumerated`.
+    const jsDir = path.join(root, 'js');
+    const built = [];
+    const walkJs = (dir) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) walkJs(p);
+        else if (e.name.endsWith('.js')) {
+          fs.readFileSync(p, 'utf8').split('\n').forEach((line, i) => {
+            if (/\b(instruct|setInstruction|say)\s*\(/.test(line) && /`[^`]*\$\{/.test(line) && !/\/\/\s*voice: enumerated/.test(line)) built.push(`${rel(root, p)}:${i + 1}`);
+          });
+        }
+      }
+    };
+    if (fs.existsSync(jsDir)) walkJs(jsDir);
+    if (built.length) s.warnings.push(`spoken line(s) built with a template literal (pass an array of parts instead; see docs/ARCHITECTURE.md "Speech notes"): ${built.slice(0, 5).join(', ')}`);
+    // Clips that no line uses any more (removed by the next npm run voice), and stray packs.
+    const wanted = new Set(mod.collectLines(root).map((l) => l.key));
+    const unused = [...have].filter((k) => !wanted.has(k));
+    if (unused.length) {
+      const dir = path.dirname(path.join(root, r.pack));
+      const kb = unused.reduce((n, k) => { try { return n + fs.statSync(path.join(dir, idx.lines[k])).size; } catch { return n; } }, 0) / 1024;
+      s.warnings.push(`${unused.length} recorded clip(s) (${kb.toFixed(0)} KB) are no longer spoken but still downloaded by every device: run npm run voice (removes them), then npm run precache`);
+    }
+    const packDir = path.posix.dirname(r.pack);
+    const audioDir = path.join(root, 'audio');
+    if (fs.existsSync(audioDir)) {
+      for (const e of fs.readdirSync(audioDir, { withFileTypes: true })) {
+        if (e.isDirectory() && `audio/${e.name}` !== packDir) s.warnings.push(`audio/${e.name}/ is not the voice pack in js/config.js (${r.pack}) but is still shipped to every device: delete it if it is no longer used`);
+      }
     }
   });
 

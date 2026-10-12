@@ -1,0 +1,10 @@
+# The stack that recorded the voice pack (Python 3.11-3.13; 3.12 recorded the current pack).
+# Pinned so clips recorded later (new lines) sound like the old ones: phonemizer and
+# espeakng-loader decide pronunciation. Install into the venv described in README "Voice":
+#   <venv python> -m pip install -r tools/voice/requirements.txt
+kokoro-onnx==0.6.1
+phonemizer==3.4.0
+espeakng-loader==0.2.4
+onnxruntime==1.31.0
+numpy==2.5.4
+lameenc==1.8.4

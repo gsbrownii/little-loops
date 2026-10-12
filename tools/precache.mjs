@@ -10,7 +10,8 @@
 // (the scope root, an alias of index.html). Never: tools/, docs/, schemas/, node_modules/, .git/,
 // dotfiles, *.md, package*.json, sw.js itself, editor/OS junk. Paths are app-relative ('js/app.js'),
 // sorted by code point, so output is deterministic on every OS. The version is a short SHA-256 of
-// every listed path + its bytes: any content change gives a new cache and triggers an app update.
+// every listed URL + its bytes and of sw.js's own code (minus the generated parts): any content or
+// worker change gives a new cache and triggers an app update.
 //
 // File names must be usable as plain relative URLs. A name containing '#' (starts a fragment), '?'
 // (starts a query), '%' (an escape), '\' (read as '/') or a control character would make the
@@ -29,7 +30,7 @@ export const ROOT_DIRS = ['css', 'js', 'data', 'art', 'icons', 'audio'];
 // Only ROOT_FILES and ROOT_DIRS are scanned, so top-level tools/ docs/ schemas/ sw.js are never seen.
 // Inside the scanned folders, skip these at any depth:
 const SKIP_DIRS = new Set(['node_modules']);
-const SKIP_FILE = /^\.|^package(-lock)?\.json$|^(thumbs\.db|desktop\.ini)$|\.(md|map|tmp|bak|orig|swp|log)$|~$/i;
+const SKIP_FILE = /^\.|^package(-lock)?\.json$|^(thumbs\.db|desktop\.ini)$|\.(md|map|tmp|bak|orig|swp|log|part)$|~$/i;
 const MARK_OPEN = '// <precache>';
 const MARK_CLOSE = '// </precache>';
 const VERSION_RE = /^(\s*const CACHE = )'little-loops-[^']*';/m;
@@ -77,10 +78,28 @@ export function unsafePaths(files) {
   return files.filter((f) => !isUrlSafePath(f));
 }
 
-// Media (the recorded voice, audio/**) is listed as 'path?v=<content hash>': sw.js downloads it
-// best-effort (not all-or-nothing) and reuses unchanged clips from the previous version's cache,
-// so an update never re-downloads megabytes of unchanged audio.
-export const isMedia = (f) => f.startsWith('audio/');
+// Media = the recorded voice CLIPS only (audio/<voice>/<hash>.mp3), listed as 'path?v=<content
+// hash>': sw.js downloads them best-effort (not all-or-nothing) and reuses unchanged clips from
+// the previous version's cache, so an update never re-downloads megabytes of unchanged audio.
+// The pack's index (audio/<voice>/index.json) and audio/silence.mp3 (the iOS unlock) are CORE:
+// all-or-nothing with the app, so an install never ends up with clips but no index (no recorded
+// voice offline at all) and a partial clip download only sends those lines to the device voice.
+export const isMedia = (f) => /^audio\/[^/]+\/[^/]+\.mp3$/.test(f);
+
+/**
+ * sw.js without its generated parts (the list and the version). It is part of the version, so a
+ * change to the worker's own code also gives a new cache: the new worker never installs into the
+ * cache that the running one is still serving from.
+ */
+function swCode(root) {
+  let text;
+  try { text = fs.readFileSync(path.join(root, 'sw.js'), 'utf8'); } catch { return ''; }
+  const lines = text.replace(/\r\n/g, '\n').split('\n');
+  const open = lines.findIndex((l) => l.trim() === MARK_OPEN);
+  const close = lines.findIndex((l, i) => i > open && l.trim() === MARK_CLOSE);
+  const kept = open >= 0 && close >= 0 ? [...lines.slice(0, open + 1), ...lines.slice(close)] : lines;
+  return kept.join('\n').replace(VERSION_RE, '$1');
+}
 
 /** { files, urls (with './' first), version, bytes }. Throws if any file name is not URL-safe. */
 export function buildPrecache(root = APP_ROOT) {
@@ -93,14 +112,16 @@ export function buildPrecache(root = APP_ROOT) {
     );
   }
   const hash = crypto.createHash('sha256');
+  hash.update('sw.js').update('\0').update(swCode(root)).update('\0');
   let bytes = 0;
   const urls = ['./'];
   for (const f of files) {
     let buf = fs.readFileSync(path.join(root, f));
     bytes += buf.length;
     if (TEXT_EXT.test(f) && buf.includes(13)) buf = Buffer.from(buf.toString('latin1').replace(/\r\n/g, '\n'), 'latin1');
-    hash.update(f).update('\0').update(buf).update('\0');
-    urls.push(isMedia(f) ? `${f}?v=${crypto.createHash('sha1').update(buf).digest('hex').slice(0, 8)}` : f);
+    const url = isMedia(f) ? `${f}?v=${crypto.createHash('sha1').update(buf).digest('hex').slice(0, 8)}` : f;
+    hash.update(url).update('\0').update(buf).update('\0'); // the listed URL: moving a file between core and media is a new version too
+    urls.push(url);
   }
   return { files, urls, version: hash.digest('hex').slice(0, 10), bytes };
 }

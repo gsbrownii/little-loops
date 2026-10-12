@@ -20,17 +20,70 @@ own text-to-speech is only a fallback. Check these first:
 
 - 🔴 **Recorded voice plays after the start tap** on iPad Safari, the installed iPad app,
   Android Chrome and Fire/Silk: the home screen should say "Pick a game! Tap a picture." in
-  Emma's (British) voice, not a device voice.
+  Emma's (British) voice, not a device voice. Check it again after 10+ minutes idle, after the
+  app was in the background and after the screen locked (the moments iOS may withdraw the
+  permission the start tap gave the app's 3 audio players).
+- 🔴 **Is iOS using the normal player?** On iPad Safari and the installed iPad app, connect
+  Safari's Web Inspector (Mac: Develop menu) and run
+  `(await import(new URL('js/core/speech.js', document.baseURI).href)).speech.stats`
+  after a session: `webAudio` should stay 0 through normal use, after coming back from the
+  background, after a Siri request or a declined phone call, and with the silent switch on.
+  Above 0 means the device used the Web Audio fallback: note the iOS version, and watch the
+  Memory timeline over about 20 Loop Machine rounds (the fallback keeps only a few clips).
 - 🔴 **iPhone/iPad silent switch and volume:** recorded clips play as media, so they should
   be heard with the ring/silent switch on. Check the volume balance against sound effects.
+  (On iOS 16 and older, the Web Audio fallback and sound effects follow the switch.)
 - 🔴 **Offline:** in airplane mode, every game still speaks in Emma's voice (the clips are
-  cached on the first visit; that first visit downloads about 8 MB, so do it on Wi-Fi).
+  cached on the first visit; that first visit downloads about 11 MB, so do it on Wi-Fi). In
+  the installed iOS app, Web Inspector should show the clips answered with 206 by the Service
+  Worker; check after a reboot too.
+- 🔴 **Short first visit, then offline:** open the site once on a slow or cellular connection,
+  close it after about a minute, switch to airplane mode and launch from the icon. Lines whose
+  recordings arrived are in Emma's voice, the rest in a device voice, and nothing is ever
+  silent. Go online and start once more: later, offline, everything is Emma. On iPad, also
+  check an update that was downloaded on a flaky network and is applied at an offline launch.
+- 🔴 **Interruptions (iOS):** with a game open, trigger a Siri request, an alarm or timer, or
+  an incoming call you decline, without leaving the app. Then tap the speaker button and finish
+  a round: the instruction is heard (Emma or a device voice), the speaker stops glowing, and
+  queued lines like "Play again, or pick a machine." still play. Repeat after returning from
+  the background and with the silent switch on. (Headless Chrome can't reproduce this.)
+- 🟡 **Nothing talks in the background:** leave the app right after tapping Play on a robot
+  puzzle, or right after a correct Loop Machine answer (switch tabs on desktop, Home button on
+  Android or the installed app, lock the screen on iPad). Nothing should talk while away, not
+  even a device voice. On return the caption shows and is said again, and the next lines speak
+  normally. Pressing Home or locking mid-line stops the voice at once. On iPad, a line due at
+  the moment you return is heard and not clipped.
+- 🟡 **Slow network, quick taps:** on a first visit over a throttled network (iOS Network Link
+  Conditioner "3G" or "Very Bad Network", Android Chrome remote-debugging throttling, toggling
+  offline mid-line), tap through screens quickly. The new screen's instruction is never held up
+  by the previous line, no old line plays on the new screen, a line is never heard twice or in
+  two voices at once, and Home, hiding the app and the speaker button silence everything.
+- 🟡 **Latency:** time from a tap to the voice for a line not heard before, and the gaps inside
+  multi-part lines ("Is it … lake, … or cat?", "Great job!" then the next line), with Low Power
+  Mode off and on. A pause of about 4 seconds before each part means iOS isn't preloading clips.
+- 🟡 The speaker button after every robot win says "<praise> Tap the green arrow for the next
+  puzzle!" in Emma's voice (both halves), and on every other screen too; also with the silent
+  switch on.
+- 🟡 With **Read word answers aloud** on (grown-up settings), play several Big and Super
+  word-order rounds: "The words are: …" is always all in Emma's voice, also offline.
 - 🟡 Voice speed Slow / Fast in grown-up settings changes the clips' speed without making
-  them sound squeaky or deep.
+  them sound squeaky or deep (Safari keeps the pitch; only the Web Audio fallback changes it).
 - 🟡 Lines are never cut off or overlapping when tapping quickly, and nothing keeps talking
   after leaving a game.
 - 🟡 Picking a device voice in grown-up settings switches everything to that voice; picking
   "Emma" switches back.
+- 🟡 Android Chrome and Fire/Silk with data saver or battery saver on: clips still preload and
+  the voice still finishes downloading for offline use.
+- 🟡 Plain Safari (not installed): after about 7 days unused, Safari may delete the cached
+  clips; the next visit downloads them again (about 11 MB). Installed apps are usually exempt.
+- 🟡 **Bluetooth headphones or speaker** (AirPods, a car or kids' headset) on iPad and Android:
+  the first word of a line after a quiet spell is not cut off, and the parts of a multi-part
+  line ("Is it … lake, … or cat?") don't lose their first syllable or come with long gaps.
+- 🟡 **Music and media controls:** start the app while music or a podcast plays. Note whether
+  it pauses (expected on iOS, where the app's audio takes over) and tell parents. After a few
+  lines, check the iOS lock screen / Control Center and the Android notification shade: there
+  should be no leftover "Now Playing" player for Little Loops, and pressing play there must not
+  make the app talk in the background.
 
 Device text-to-speech (used only for unrecorded lines or when a grown-up picks a device voice):
 
@@ -124,6 +177,17 @@ Device text-to-speech (used only for unrecorded lines or when a grown-up picks a
   (circle/squircle) and the splash screen.
 - 🔴 **Offline:** after one online visit, turn on airplane mode, launch from the home-screen
   icon, and open all three games.
+- 🔴 **Cold launch on a low-end tablet** (Fire 7, an older Android tablet), with the voice fully
+  cached: force-stop the installed app and launch it again. The start screen should appear in
+  about a second, and the first line should start without a noticeable delay.
+- 🟡 **Slow first install:** throttle to about 300 kbps (or add over a second of latency per
+  request) and watch the server or proxy log: each voice clip is downloaded once, and the
+  number of cached clips keeps growing after the app is installed until all are there. On iOS,
+  also check that missing clips get filled in over the next launches (WebKit may stop the
+  service worker sooner), and that sending the app to the background during the first install
+  leaves an app that still opens offline.
+- 🟡 **Storage:** `navigator.storage.estimate()` shows about 12 MB once installed (about 24 MB
+  for a moment during an update). An update over cellular downloads only the changed clips.
 - 🟡 **Updates:** deploy a change (remember `npm run precache`), then reopen the installed
   app. It should reload into the new version on the start or home screen, never mid-game.
   Installed iOS apps are often resumed rather than restarted, so updates may arrive only after

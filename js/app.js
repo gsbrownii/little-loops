@@ -313,7 +313,7 @@ function showHome() {
       if (locked) {
         sound.play('locked');
         flash(tile, 'wobble');
-        speech.say(m.lockedSay || `${m.title} is coming soon!`);
+        speech.say(m.lockedSay || `${m.title} is coming soon!`); // voice: enumerated (data/app.json)
       } else {
         sound.play('tap');
         go(`#/${m.id}`);

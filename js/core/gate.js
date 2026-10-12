@@ -45,7 +45,7 @@ export function parentGate({ hold = HOLD_MS } = {}) {
       { class: 'gate-card', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Grown-ups only' },
       closeBtn,
       h('div', { class: 'gate-title' }, 'Grown-ups only'),
-      h('div', { class: 'gate-text' }, 'Press and hold the button for 3 seconds.'),
+      h('div', { class: 'gate-text' }, 'Press and hold the button for 3 seconds.'), // not spoken
       holdBtn
     );
     const overlay = h('div', { class: 'overlay gate' }, card);

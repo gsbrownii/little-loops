@@ -200,7 +200,7 @@ console warning.
 |---|---|---|---|---|
 | `id` | yes | yes | yes | Stable id, `^[a-z0-9][a-z0-9-]*$`, max 40. |
 | `name` | yes | yes | yes | Short human name (tile label for screen readers), max 40, e.g. `"Party hat"`. |
-| `say` | recommended | recommended | recommended | Spoken when its tile is tapped: a short cheerful phrase, e.g. `"A cute kitty cat!"`. Missing: the app says `"<name>!"` (warning). |
+| `say` | recommended | recommended | recommended | Spoken when its tile is tapped: a short cheerful phrase, e.g. `"A cute kitty cat!"`. Missing: the app says `"<name>!"` (warning), and `npm run voice` records exactly that line. |
 | `anchors` | **yes** | - | - | All four: `head`, `eyes`, `neck`, `hand`, each `{ x, y, scale?, rotate? }` in animal-box coordinates (0..300). `scale` > 0 (default 1), `rotate` -180..180 degrees (default 0). |
 | `anchor` | - | **yes** | - | Which animal anchor it attaches to: `head`, `eyes`, `neck` or `hand`. |
 | `viewBox` | - | optional | - | `[minX, minY, width, height]` framing the accessory when drawn alone (default `[-110, -110, 220, 220]`). Rarely needed: the picker shows accessories on the chosen animal. |

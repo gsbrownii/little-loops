@@ -11,7 +11,8 @@ export function createChrome(topbar, { go }) {
   const replayBtn = h('button', { class: 'btn-round topbar-replay', type: 'button', 'aria-label': 'Say it again' }, icon('speaker'));
   topbar.replaceChildren(backBtn, actions, caption, replayBtn);
 
-  let instruction = '';
+  let instruction = ''; // the caption text
+  let instructionParts = []; // the same line as speech parts (what replay says)
   let back = null;
 
   backBtn.addEventListener('click', () => {
@@ -23,6 +24,18 @@ export function createChrome(topbar, { go }) {
 
   replayBtn.addEventListener('click', () => chrome.replay());
   speech.onChange((on) => replayBtn.classList.toggle('is-speaking', on));
+
+  // speech.js drops lines asked for while the app is hidden (e.g. a win line from a game timer).
+  // When the app is shown again, say the current instruction so a child who can't read still
+  // hears what to do next.
+  let droppedAtHide = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      droppedAtHide = speech.stats.hidden;
+      return;
+    }
+    if (speech.stats.hidden > droppedAtHide && !speech.speaking) chrome.replay();
+  });
 
   const chrome = {
     /**
@@ -42,14 +55,20 @@ export function createChrome(topbar, { go }) {
       actions.replaceChildren(...nodes);
     },
 
-    /** Set (and by default speak) the current screen's instruction. */
+    /**
+     * Set (and by default speak) the current screen's instruction. `text` is a string or an
+     * array of speech parts (['Woo-hoo!', 'Tap the green arrow for the next puzzle!']): the caption
+     * shows them joined, and speech and the replay button say each part's own recording.
+     */
     setInstruction(text, { speak = true } = {}) {
-      instruction = text || '';
+      instructionParts = (Array.isArray(text) ? text : [text]).filter((p) => p != null && String(p).trim()).map(String);
+      instruction = instructionParts.join(' ');
       caption.textContent = instruction;
-      if (speak && instruction) return speech.say(instruction);
+      if (speak && instructionParts.length) return speech.say(instructionParts);
       return Promise.resolve(false);
     },
 
+    /** The caption text (always a string, also when it was set as parts). */
     get instruction() { return instruction; },
 
     replay() {
@@ -58,11 +77,12 @@ export function createChrome(topbar, { go }) {
         flash(replayBtn, 'wobble');
         return;
       }
-      speech.say(instruction);
+      speech.say(instructionParts);
     },
 
     reset() {
       instruction = '';
+      instructionParts = [];
       caption.textContent = '';
       actions.replaceChildren();
       chrome.setBack({ icon: 'home', to: '#/' });

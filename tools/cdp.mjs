@@ -115,7 +115,11 @@ export async function launch({
     for (const w of [...waiters]) {
       if (w.method === msg.method) { waiters.splice(waiters.indexOf(w), 1); w.resolve(msg.params); }
     }
+    for (const fn of subscribers.get(msg.method) || []) {
+      try { fn(msg.params); } catch { /* a test's listener must not break the driver */ }
+    }
   };
+  const subscribers = new Map(); // method -> Set<fn>  (api.on)
 
   const send = (method, params = {}) => new Promise((resolve, reject) => {
     const id = nextId++;
@@ -138,6 +142,13 @@ export async function launch({
     logs,
     errors,
     send,
+
+    /** Listen to a DevTools event, e.g. on('Fetch.requestPaused', (p) => ...). Returns an unsubscribe function. */
+    on(method, fn) {
+      if (!subscribers.has(method)) subscribers.set(method, new Set());
+      subscribers.get(method).add(fn);
+      return () => subscribers.get(method).delete(fn);
+    },
 
     async setViewport(w, h, { touch: t = touch, mobile: m = mobile } = {}) {
       await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: dpr, mobile: m });

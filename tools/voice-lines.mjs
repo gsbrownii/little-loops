@@ -10,10 +10,12 @@
 //      locked-game lines from data/app.json
 //   2. phrases written in the code (js/**/*.js): string literals that look like spoken sentences
 //      (start with a capital letter, end with . ! or ?) — over-collecting a few is harmless
-//   3. lines the code assembles: Loop Machine read-aloud parts (tokens.js choicesParts/wordsParts),
-//      finished sentences, end-of-game star counts, coloring colour names
-// Anything still missed is spoken with the device voice and recorded in speech.missing at runtime;
-// tools/smoke-test.mjs fails if a played-through game hit one.
+//   3. lines the code assembles: Loop Machine read-aloud parts (tokens.js choicesParts/wordsParts:
+//      every choice in every position, every word both mid-list "ago," and last "ago."), finished
+//      sentences, the end-of-game star counts that can happen, coloring colour names
+// Anything still missed is spoken with the device voice. At runtime every line passed to say()
+// without a recording is recorded in speech.unrecorded (spoken, queued or dropped by an interrupt),
+// and tools/smoke-test.mjs fails if a played-through game hit one.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,6 +23,8 @@ import { fileURLToPath } from 'node:url';
 import { APP_ROOT } from './serve.mjs';
 import { speechKey } from '../js/core/speech.js';
 import { choicesParts, wordsParts, isPicture } from '../js/modules/machine/tokens.js';
+import { sayOf } from '../js/modules/coloring/parts.js';
+import { prepareData } from '../js/modules/machine/rounds.js';
 
 const fileFor = (key) => `${crypto.createHash('sha1').update(key).digest('hex').slice(0, 12)}.mp3`;
 
@@ -48,7 +52,8 @@ const levels = read('data/robot/levels.json');
 for (const l of levels.levels || []) { add(l.say, 'levels'); add(l.hint, 'levels'); }
 
 for (const f of ['animals', 'accessories', 'backgrounds']) {
-  for (const it of read(`data/coloring/${f}.json`).items || []) add(it.say || it.name, `coloring/${f}`);
+  // exactly what the picker says: the item's `say`, else "<name>!" (parts.js sayOf)
+  for (const it of read(`data/coloring/${f}.json`).items || []) add(sayOf(it), `coloring/${f}`);
 }
 
 const machine = read('data/machine/rounds.json');
@@ -57,9 +62,15 @@ for (const r of machine.rounds || []) {
   add(r.say, 'machine'); add(r.hint, 'machine'); add(r.explain, 'machine');
   if (r.type === 'order' && Array.isArray(r.words)) {
     add(r.words.join(' '), 'machine sentence');                 // the finished sentence, read back
-    wordsParts(r.words).forEach((p) => add(p, 'machine read-aloud'));
-    // read-aloud lists the cards in tray order: any word can be last
-    r.words.forEach((w) => add(`${String(w).replace(/[.,!?;:]+$/g, '')}.`, 'machine read-aloud'));
+    // "The words are: ..." lists the cards in their scrambled tray order (wordsParts), so ANY word
+    // can be mid-list ("ago,") or last ("ago."): record every word both ways.
+    const [intro, ...listed] = wordsParts(r.words); // the app's own cleaning; each ends in ',' or '.'
+    add(intro, 'machine read-aloud');
+    for (const p of listed) {
+      const word = p.slice(0, -1);
+      add(`${word},`, 'machine read-aloud');
+      add(`${word}.`, 'machine read-aloud');
+    }
   } else if (Array.isArray(r.choices)) {
     // "which group has more" (picture groups) is not read aloud
     if (r.choices.some((c) => Array.isArray(c) && c.every(isPicture))) continue;
@@ -70,12 +81,16 @@ for (const r of machine.rounds || []) {
     add('Is it', 'machine read-aloud');
   }
 }
-// End-of-session star counts (session.js: "You earned 8 gold stars and 2 silver stars!")
+// End-of-session star counts (session.js finish(): "You earned 8 gold stars and 2 silver stars!").
+// Every round of a session ends gold or silver, so golds + silvers = the session's length, which
+// buildSession() makes min(sessionLength, rounds in that tier). The same prepareData() as the game
+// reads rounds.json, so only totals that can really happen are recorded.
 const plural = (n, w) => `${n} ${w} star${n === 1 ? '' : 's'}`;
-const N = Math.max(10, machine.sessionLength || 10);
-for (let g = 0; g <= N; g++) {
-  for (let s = 0; s <= N - g; s++) {
-    if (!g && !s) continue;
+const md = prepareData(machine, () => {});
+const totals = new Set(md.tiers.map((t) => Math.min(md.sessionLength, (md.byTier[t.id] || []).length)).filter((n) => n > 0));
+for (const total of totals) {
+  for (let g = 0; g <= total; g++) {
+    const s = total - g;
     add(g && s ? `You earned ${plural(g, 'gold')} and ${plural(s, 'silver')}!` : g ? `You earned ${plural(g, 'gold')}!` : `You earned ${plural(s, 'silver')}!`, 'machine end');
   }
 }
@@ -94,11 +109,16 @@ function* jsFiles(dir) {
 }
 const LITERAL = /'((?:[^'\\\n]|\\.)*)'|"((?:[^"\\\n]|\\.)*)"|`((?:[^`\\$]|\\.|\$(?!\{))*)`/g;
 const SPOKEN = /^[A-Z][^<>{}=#\\/@|_]*[.!?]$/;
+// Text that looks like a sentence but is only ever shown (settings notes, labels, a confirm box):
+// mark its source line with a trailing `// not spoken` comment so it isn't recorded and shipped.
+// Never put that marker on a line that also speaks something.
+const NOT_SPOKEN = /\/\/\s*not spoken\b/;
 for (const file of jsFiles(path.join(root, 'js'))) {
   const rel = path.relative(root, file).split(path.sep).join('/');
   for (const rawLine of fs.readFileSync(file, 'utf8').split('\n')) {
     const line = rawLine.trim();
     if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*') || /console\.(warn|error|log)|throw new Error/.test(line)) continue;
+    if (NOT_SPOKEN.test(line)) continue;
     for (const m of line.matchAll(LITERAL)) {
       const s = (m[1] ?? m[2] ?? m[3] ?? '').replace(/\\(['"`\\])/g, '$1').replace(/\\u2019/g, '’');
       if (s.length < 2 || s.length > 120 || !SPOKEN.test(s) || !/[aeiouy]/i.test(s)) continue;

@@ -757,7 +757,8 @@ export function mountPuzzle(root, ctx, data, n) {
     const line = isLast ? (allDone ? SAY.allDone : SAY.lastDone) : ctx.praise();
     showWin(allDone);
     ctx.celebrate({ big: isLast });
-    ctx.instruct(isLast ? line : `${line} ${SAY.next}`, { speak: false });
+    // As parts, so the caption reads as one line and the replay button plays both recordings.
+    ctx.instruct(isLast ? line : [line, SAY.next], { speak: false });
     ctx.say(line);
     if (!isLast) ctx.say(SAY.next, { interrupt: false });
   }

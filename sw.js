@@ -1,28 +1,33 @@
 /* Little Loops service worker (classic script, no imports).
  *
- * - install:  precaches the app files in PRECACHE (fetched with cache:'reload', all-or-nothing), then
- *             the recorded voice clips (entries with ?v=<hash>) BEST-EFFORT: a clip already in an older
- *             version's cache with the same hash is copied instead of downloaded, and a clip that fails
- *             doesn't fail the install (the app speaks it with the device voice; {type:'TOPUP'} from
- *             the page fills gaps later).
+ * - install:  precaches the app files in PRECACHE (fetched with cache:'reload', all-or-nothing):
+ *             the code, content and art, plus the voice pack's index (audio/<voice>/index.json)
+ *             and audio/silence.mp3, so an installed app always knows which lines are recorded.
+ *             Then the recorded voice clips (entries with ?v=<hash>) BEST-EFFORT: a clip already in
+ *             an older version's cache with the same hash is copied instead of downloaded, and a
+ *             clip that fails doesn't fail the install (the device voice says that one line;
+ *             {type:'TOPUP'} from the page fills gaps later, joining a fill that is still running).
  *             It does NOT skipWaiting: an update waits until js/core/pwa.js sends {type:'SKIP_WAITING'}
  *             from the splash screen and reloads — never in the middle of a child's game.
  * - activate: removes this app's caches from older versions, then claims open pages.
  * - fetch:    same-origin GET requests inside the scope only (never cross-origin).
  *             Navigations to the app (scope root or index.html, any ?query) get the cached index.html,
- *             falling back to the network. Everything else is cache-first (query string ignored);
- *             on a miss it goes to the network and keeps a copy of good same-origin responses.
+ *             falling back to the network. Everything else is cache-first, looked up EXACTLY: the
+ *             request's path is mapped to the URL it was precached under (keyFor; any ?query is
+ *             ignored, and a clip finds its ?v= entry). On a miss it goes to the network and keeps
+ *             a copy of good same-origin responses.
  *             Range requests (how <audio> loads clips) are answered from the cache with a 206 slice.
  *
  * All URLs are resolved against self.registration.scope, so the app works from a GitHub Pages
  * sub-path (https://user.github.io/little-loops/).
  *
- * The CACHE version and the PRECACHE list are GENERATED: after changing any app file run
+ * The CACHE version and the PRECACHE list are GENERATED: after changing any app file (or the code
+ * in this file) run
  *   node tools/precache.mjs          (CI / pre-deploy check: node tools/precache.mjs --check)
  */
 'use strict';
 
-const CACHE = 'little-loops-6470ebb21d';
+const CACHE = 'little-loops-b459999044';
 
 const PRECACHE = [
 // <precache>
@@ -102,6 +107,7 @@ const PRECACHE = [
   'audio/emma/0e57c0c33846.mp3?v=2c5960a5',
   'audio/emma/0e903db1657e.mp3?v=e007014e',
   'audio/emma/0f563c8b899b.mp3?v=69290ced',
+  'audio/emma/0f7ad2a173ac.mp3?v=e1ea8979',
   'audio/emma/0fb8043adf70.mp3?v=a3e7aa14',
   'audio/emma/104f0bc6426f.mp3?v=7cc61024',
   'audio/emma/10564591cdfe.mp3?v=61b24b6b',
@@ -112,6 +118,7 @@ const PRECACHE = [
   'audio/emma/1144c4e96aa7.mp3?v=d86acc18',
   'audio/emma/118878013031.mp3?v=beffe47f',
   'audio/emma/1195e9a2c742.mp3?v=49522074',
+  'audio/emma/11b9fc07abd7.mp3?v=8b8612e7',
   'audio/emma/11bd656bf45b.mp3?v=fa4add1b',
   'audio/emma/121030e4ff71.mp3?v=f1862819',
   'audio/emma/126ff149e999.mp3?v=00f1f3d4',
@@ -128,6 +135,7 @@ const PRECACHE = [
   'audio/emma/1489275effd8.mp3?v=1c6a4a78',
   'audio/emma/14c2006bd100.mp3?v=22d8e262',
   'audio/emma/1574ba908091.mp3?v=1e90eeef',
+  'audio/emma/15ba996b8515.mp3?v=3cbd19fb',
   'audio/emma/15db8e025b5a.mp3?v=91d90b06',
   'audio/emma/1613df840bd3.mp3?v=345e634a',
   'audio/emma/1632147a810c.mp3?v=03c4ce4b',
@@ -364,6 +372,7 @@ const PRECACHE = [
   'audio/emma/47f33180b051.mp3?v=ce794cec',
   'audio/emma/487cbd3e0507.mp3?v=2ffd3d05',
   'audio/emma/48ad9df3d6fd.mp3?v=4fee8a67',
+  'audio/emma/48ba42e5fa03.mp3?v=f951d419',
   'audio/emma/48c501b73cd1.mp3?v=fe908ee5',
   'audio/emma/48cee8a57540.mp3?v=7319a8fb',
   'audio/emma/48e093ecff96.mp3?v=d615e34d',
@@ -763,6 +772,7 @@ const PRECACHE = [
   'audio/emma/94fc88d1784d.mp3?v=ed956a3e',
   'audio/emma/950db54c225e.mp3?v=e1c6361d',
   'audio/emma/9566dd829d90.mp3?v=8370bd2b',
+  'audio/emma/95d517c73b45.mp3?v=aef784e5',
   'audio/emma/96311c7091a4.mp3?v=cb0df4c1',
   'audio/emma/9647c00b2fbd.mp3?v=3426fbdf',
   'audio/emma/9684012dd0c3.mp3?v=9c2939c2',
@@ -981,7 +991,9 @@ const PRECACHE = [
   'audio/emma/bc7d3747e7ac.mp3?v=26889e46',
   'audio/emma/bc893ce8d0eb.mp3?v=726b6015',
   'audio/emma/bcdddce18764.mp3?v=f0602d24',
+  'audio/emma/bce980000e03.mp3?v=5d5b2e6f',
   'audio/emma/bceff72a0aba.mp3?v=d6a2df07',
+  'audio/emma/bd0a3009ff0b.mp3?v=3fc925e7',
   'audio/emma/bd2b2a7304fc.mp3?v=00f177ea',
   'audio/emma/bd856ab94670.mp3?v=c358da9f',
   'audio/emma/be3a32195e66.mp3?v=0bb1e985',
@@ -1019,6 +1031,7 @@ const PRECACHE = [
   'audio/emma/c594b813632e.mp3?v=9c72f3e1',
   'audio/emma/c59c4ad6099d.mp3?v=6ace4efd',
   'audio/emma/c5a4d5fd5d9d.mp3?v=8e2380d5',
+  'audio/emma/c5d308b9c644.mp3?v=e95d2ecd',
   'audio/emma/c6120cc36226.mp3?v=33ff2da2',
   'audio/emma/c63e6d3cc847.mp3?v=982ba85b',
   'audio/emma/c6415cd85970.mp3?v=61b9768c',
@@ -1304,8 +1317,8 @@ const PRECACHE = [
   'audio/emma/ff5296cefe8c.mp3?v=06f15ed7',
   'audio/emma/ff60edb892ce.mp3?v=acb5b3e5',
   'audio/emma/ff8bc2a4ae01.mp3?v=22d1ed3f',
-  'audio/emma/index.json?v=6b76ce70',
-  'audio/silence.mp3?v=db1b702e',
+  'audio/emma/index.json',
+  'audio/silence.mp3',
   'css/base.css',
   'data/app.json',
   'data/coloring/accessories.json',
@@ -1369,38 +1382,60 @@ const PRECACHE = [
 const PREFIX = 'little-loops-';
 const SCOPE = self.registration.scope;
 const INDEX_URL = new URL('index.html', SCOPE).href;
-const MATCH = { ignoreSearch: true, ignoreVary: true };
+// Every lookup is EXACT: keyFor() maps a request to the URL its file was precached under, so a
+// lookup opens one entry. (ignoreSearch makes Chromium scan the whole cache, 1300+ entries, on
+// every request: seconds added to a cold start.)
+const MATCH = { ignoreVary: true };
 
 const isMedia = (path) => path.includes('?v=');
 const CORE = PRECACHE.filter((p) => !isMedia(p));
 const MEDIA = PRECACHE.filter(isMedia);
-const MEDIA_BUDGET_MS = 4 * 60 * 1000; // never hold an install longer than this for voice clips
+const MEDIA_BUDGET_MS = 4 * 60 * 1000; // never hold an install longer than this (counted from its start)
+
+// origin + path -> the precached URL (with ?v=<hash> for a clip). Requests arrive without the ?v=.
+const KEY = new Map(PRECACHE.map((p) => {
+  const u = new URL(p, SCOPE);
+  return [u.origin + u.pathname, u.href];
+}));
+/** Cache key for a request URL: the precached URL for that path (any ?query ignored), else the URL itself. */
+function keyFor(url) {
+  const u = new URL(url);
+  u.hash = '';
+  return KEY.get(u.origin + u.pathname) || u.href;
+}
 
 self.addEventListener('install', (event) => {
+  const deadline = Date.now() + MEDIA_BUDGET_MS;
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     await cache.addAll(CORE.map((path) => new Request(new URL(path, SCOPE).href, { cache: 'reload' })));
-    await Promise.race([fillMedia(cache), new Promise((r) => setTimeout(r, MEDIA_BUDGET_MS))]);
+    await Promise.race([fill(), new Promise((r) => setTimeout(r, Math.max(0, deadline - Date.now())))]);
   })());
 });
+
+// One media fill at a time in this worker, shared by the install and every TOPUP: a TOPUP that
+// arrives while the install's fill is still running (slow first visit) joins it instead of
+// downloading the same clips a second time, and its waitUntil keeps the worker alive for it.
+let filling = null;
+function fill() {
+  if (!filling) filling = caches.open(CACHE).then(fillMedia).finally(() => { filling = null; });
+  return filling;
+}
 
 /** Put every voice clip into `cache`: copied from an older version when unchanged, else downloaded. */
 async function fillMedia(cache) {
   const older = [];
   for (const name of await caches.keys()) if (name.startsWith(PREFIX) && name !== CACHE) older.push(await caches.open(name));
-  const todo = [];
-  for (const path of MEDIA) {
-    const url = new URL(path, SCOPE).href;
-    if (await cache.match(url)) continue; // exact URL (incl. ?v=hash): already here
-    todo.push(url);
-  }
+  const have = new Set((await cache.keys()).map((r) => r.url)); // one listing, not 1300 lookups
+  const todo = MEDIA.map((path) => new URL(path, SCOPE).href).filter((url) => !have.has(url)); // exact URL incl. ?v=hash
   let next = 0;
   const worker = async () => {
     while (next < todo.length) {
       const url = todo[next++];
       try {
+        if (await cache.match(url, MATCH)) continue; // stored meanwhile by someone else
         let res = null;
-        for (const c of older) { res = await c.match(url); if (res) break; }
+        for (const c of older) { res = await c.match(url, MATCH); if (res) break; }
         if (!res) {
           const net = await fetch(new Request(url, { cache: 'reload' }));
           if (net.status === 200 && net.type === 'basic') res = net;
@@ -1431,7 +1466,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
   // The page asks (once per start) to download any voice clips a flaky install missed.
-  if (event.data && event.data.type === 'TOPUP') event.waitUntil(caches.open(CACHE).then(fillMedia).catch(() => {}));
+  if (event.data && event.data.type === 'TOPUP') event.waitUntil(fill().catch(() => {}));
 });
 
 self.addEventListener('fetch', (event) => {
@@ -1453,25 +1488,39 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-/** A 206 slice of the cached file for a Range request; the network if it isn't cached. */
+/**
+ * A Range request answered from the cache the way an HTTP server would: one well-formed byte
+ * range -> 206 with that slice; one that can't be satisfied -> 416; any other Range header
+ * (several ranges, another unit, reversed, junk) is ignored -> 200 with the whole file.
+ * Not cached -> the network.
+ */
 async function rangeFromCache(req) {
   const cache = await caches.open(CACHE);
-  const hit = await cache.match(req.url, MATCH);
+  const hit = await cache.match(keyFor(req.url), MATCH);
   if (!hit) {
     try { return await fetch(req); } catch { return Response.error(); }
   }
   const buf = await hit.arrayBuffer();
   const size = buf.byteLength;
-  const m = /^bytes=(\d*)-(\d*)$/.exec((req.headers.get('range') || '').trim());
-  let start = 0;
-  let end = size - 1;
-  if (m && m[1] !== '') {
-    start = Number(m[1]);
-    if (m[2] !== '') end = Math.min(Number(m[2]), size - 1);
-  } else if (m && m[2] !== '') {
-    start = Math.max(0, size - Number(m[2])); // suffix range: the last N bytes
+  const m = /^bytes\s*=\s*(\d*)\s*-\s*(\d*)\s*$/i.exec((req.headers.get('range') || '').trim());
+  const from = m && m[1] !== '' ? Number(m[1]) : null;
+  const to = m && m[2] !== '' ? Number(m[2]) : null;
+  if (!m || (from === null && to === null) || (from !== null && to !== null && to < from)) {
+    const headers = new Headers(hit.headers);
+    headers.delete('Content-Range');
+    headers.set('Content-Length', String(size));
+    headers.set('Accept-Ranges', 'bytes');
+    return new Response(buf, { status: 200, statusText: 'OK', headers });
   }
-  if (!m || start > end || start >= size) {
+  let start;
+  let end = size - 1;
+  if (from !== null) {
+    start = from;
+    if (to !== null) end = Math.min(to, size - 1);
+  } else {
+    start = Math.max(0, size - to); // suffix range: the last `to` bytes
+  }
+  if (start >= size || (from === null && to === 0)) {
     return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${size}` } });
   }
   const headers = new Headers(hit.headers);
@@ -1502,7 +1551,8 @@ async function appShell(req) {
 
 async function cacheFirst(req, event) {
   const cache = await caches.open(CACHE);
-  const hit = await cache.match(req, MATCH);
+  // A string key, not `req`: a clip is stored under its ?v= URL, which the request doesn't carry.
+  const hit = await cache.match(keyFor(req.url), MATCH);
   if (hit) return req.mode === 'navigate' ? navigable(hit) : hit;
   let res;
   try {

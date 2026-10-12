@@ -11,7 +11,7 @@ export default {
   id: 'robot',
 
   settings: [
-    { key: 'unlockAll', label: 'Unlock all puzzle levels', type: 'toggle', default: false, hint: 'Lets a child jump to any puzzle.' },
+    { key: 'unlockAll', label: 'Unlock all puzzle levels', type: 'toggle', default: false, hint: 'Lets a child jump to any puzzle.' }, // not spoken
   ],
 
   async mount(root, ctx) {

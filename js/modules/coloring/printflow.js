@@ -85,7 +85,7 @@ export function createPrintFlow({ ctx, print, onDone }) {
     const go = h('button', { class: 'col-ask-print', type: 'button', 'aria-label': 'Print' }, icon('print'));
     const close = h('button', { class: 'btn-round col-ask-close', type: 'button', 'aria-label': 'Close' }, icon('close'));
     const card = h('div', { class: 'col-ask-card', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Print' },
-      close, go, h('div', { class: 'col-ask-text' }, 'Ready! Tap to print.'));
+      close, go, h('div', { class: 'col-ask-text' }, 'Ready! Tap to print.')); // not spoken
     const overlay = h('div', { class: 'overlay col-ask' }, card);
     const cancel = () => {
       closeAsk();

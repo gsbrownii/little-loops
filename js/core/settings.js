@@ -125,8 +125,8 @@ export function renderSettings(root, { chrome, registry, go }) {
   const installBtn = h('button', { type: 'button', class: 'btn-pill', onClick: async () => { await install.prompt(); renderInstall(); } }, 'Install app');
   const installRow = h('div', { class: 'set-row' });
   const renderInstall = () => {
-    if (install.isStandalone()) installRow.replaceChildren(h('span', { class: 'set-label' }, 'Installed', h('small', null, 'Running as an app.')));
-    else if (install.available()) installRow.replaceChildren(h('span', { class: 'set-label' }, 'Install', h('small', null, 'Adds an icon to your home screen and works offline.')), installBtn);
+    if (install.isStandalone()) installRow.replaceChildren(h('span', { class: 'set-label' }, 'Installed', h('small', null, 'Running as an app.'))); // not spoken
+    else if (install.available()) installRow.replaceChildren(h('span', { class: 'set-label' }, 'Install', h('small', null, 'Adds an icon to your home screen and works offline.')), installBtn); // not spoken
     else installRow.replaceChildren(h('span', { class: 'set-label' }, 'Install', h('small', null, 'iPad/iPhone: tap Share, then “Add to Home Screen”. Android: browser menu → “Install app”.')));
   };
   renderInstall();
@@ -136,7 +136,7 @@ export function renderSettings(root, { chrome, registry, go }) {
     type: 'button',
     class: 'btn-pill btn-danger',
     onClick: async () => {
-      if (!window.confirm('Reset all progress? Puzzle stars and saved pictures will be cleared.')) return;
+      if (!window.confirm('Reset all progress? Puzzle stars and saved pictures will be cleared.')) return; // not spoken
       resetBtn.disabled = true;
       // Know every game's settings first, so none of them is wiped (bounded: a stalled download
       // must not leave the button stuck). A game whose code could not be loaded keeps its saved
@@ -155,7 +155,7 @@ export function renderSettings(root, { chrome, registry, go }) {
       toggle('Sound effects', () => storage.get('settings.sound', true), (v) => storage.set('settings.sound', v))),
     ...slots,
     section('App', installRow,
-      h('div', { class: 'set-row' }, h('span', { class: 'set-label' }, 'Progress', h('small', null, storage.isPersistent() ? 'Saved on this device only.' : 'This browser is not saving progress (private mode?).')), resetBtn)),
+      h('div', { class: 'set-row' }, h('span', { class: 'set-label' }, 'Progress', h('small', null, storage.isPersistent() ? 'Saved on this device only.' : 'This browser is not saving progress (private mode?).')), resetBtn)), // not spoken
     section('Privacy',
       h('p', { class: 'set-note' }, `${APP.name} has no accounts, no ads and no tracking, and collects no data itself. Progress is saved only on this device. After the first visit it works offline.`),
       h('p', { class: 'set-note' }, 'Spoken instructions use the recorded Little Loops voice, which is part of the app and plays on this device. If you pick a device voice instead (or a new line has no recording yet), this device’s text-to-speech speaks; with a voice marked “needs internet”, the browser sends the spoken words to that voice provider (for example Google or Microsoft).')),
