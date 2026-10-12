@@ -104,8 +104,7 @@ for f in out.glob('*.mp3'):
     'schema': 'voice-pack/1', 'voice': a.voice, 'name': a.name,
     'lang': 'en-GB' if a.lang.lower() == 'en-gb' else 'en-US',
     'engine': 'kokoro-v1.0', 'lines': dict(sorted(index.items())),
-}, ensure_ascii=False, indent=0), encoding='utf-8', newline='
-')
+}, ensure_ascii=False, indent=0), encoding='utf-8', newline='\n')
 
 silence = APP / 'audio/silence.mp3'
 if not silence.exists():
