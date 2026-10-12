@@ -406,6 +406,7 @@ function showSplash() {
 function boot() {
   installTapGuard(document.getElementById('app'));
   registerServiceWorker();
+  speech.loadPack(APP.voicePack); // the recorded voice; falls back to the device voice
   window.addEventListener('hashchange', route);
   // Back online after the registry failed to load: show the games without another tap.
   window.addEventListener('online', () => {

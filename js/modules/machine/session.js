@@ -10,7 +10,7 @@ import { h, icon, fromMarkup, flash, prefersReducedMotion } from '../../core/dom
 import { draggable } from '../../core/drag.js';
 import { RATES } from '../../core/speech.js';
 import { storage } from '../../core/storage.js';
-import { sameAnswer, tokenKind, isNumberToken } from './tokens.js';
+import { sameAnswer, tokenKind, isNumberToken, choicesParts, wordsParts } from './tokens.js';
 import { buildSession, pushRecent, shuffle, scrambleOrder, loopPeriod, hops, hopLabel } from './rounds.js';
 import {
   beltToken, answerContent, filledContent, choiceName, isPictureChoice, beltWidth, groupWidth, textWidth,
@@ -188,18 +188,8 @@ export function mountSession(root, ctx, data, tier) {
   function speakChoices(list) {
     if (!list.length) return;
     if (list.some((c) => Array.isArray(c) && isPictureChoice(c))) return; // "which group has more" etc.
-    if (list.length === 1) {
-      // A single answer (not reached today: rounds have 2-4 choices and the hint leaves two).
-      ctx.say(`Is it ${choiceName(list[0])}?`, { interrupt: false });
-      return;
-    }
-    if (list.some((c) => Array.isArray(c))) {
-      list.forEach((c, i) => ctx.say(`${i ? 'Or ' : ''}${choiceName(c)}${i === list.length - 1 ? '?' : '.'}`, { interrupt: false }));
-      return;
-    }
-    const names = list.map(choiceName);
-    const head = names.slice(0, -1).join(', ');
-    ctx.say(`Is it ${head}, or ${names[names.length - 1]}?`, { interrupt: false });
+    // Parts ("Is it", "lake,", "or cat?") so the voice pack can play a recorded clip for each.
+    ctx.say(choicesParts(list), { interrupt: false });
   }
 
   function liveChoices() {
@@ -263,7 +253,7 @@ export function mountSession(root, ctx, data, tier) {
       ctx.instruct(round.say);
     }
     if (round.type === 'order') {
-      if (readAloud) ctx.say(`The words are: ${order.cards.map((c) => c.word).join(', ')}.`, { interrupt: false });
+      if (readAloud) ctx.say(wordsParts(order.cards.map((c) => c.word)), { interrupt: false });
     } else if (littleTier || readAloud) {
       speakChoices(answers.map((a) => a.choice));
     }

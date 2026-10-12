@@ -4,4 +4,6 @@ export const APP = {
   name: 'Little Loops',
   version: '1.0.0',
   storageKey: 'littleloops:v1',
+  // Recorded voice (see tools/voice/). Lines without a recording use the device voice.
+  voicePack: 'audio/emma/index.json',
 };

@@ -31,6 +31,16 @@ const section = (t) => console.log(`\n${t}`);
 
 // Console noise we accept (none expected today; keep the list explicit).
 const BENIGN = [/favicon\.ico/];
+/** Recorded voice: no spoken line fell back to the device voice, and clips really played. */
+async function voiceCheck(b, where, { expectClips = true } = {}) {
+  await b.sleep(400);
+  const v = await b.eval(`import(new URL('js/core/speech.js', document.baseURI).href).then((m) => ({
+    pack: !!m.speech.packInfo(), missing: [...m.speech.missing], stats: { ...m.speech.stats } }))`);
+  if (!v.pack) { fail(`voice pack loaded (${where})`); return; }
+  check(v.missing.length === 0, `every spoken line has a recording (${where})`, v.missing.slice(0, 4).map((t) => JSON.stringify(t)).join(', '));
+  if (expectClips) check(v.stats.started > 0 && v.stats.clipErrors === 0 && v.stats.device === 0, `recorded voice plays (${where})`, JSON.stringify(v.stats));
+}
+
 function checkErrors(b, where) {
   const errs = b.errors.filter((e) => !BENIGN.some((re) => re.test(e)));
   check(errs.length === 0, `no console errors (${where})`, errs.slice(0, 5).join(' | '));
@@ -120,6 +130,7 @@ async function testCore() {
     await b.eval("location.hash = '#/'"); await b.waitFor("document.body.dataset.screen === 'home'");
     await b.eval("location.hash = '#/settings'"); await b.sleep(600);
     check(await b.eval("document.body.dataset.screen") === 'home', 'typing #/settings without the gate goes home');
+    await voiceCheck(b, 'core');
     checkErrors(b, 'core');
   } finally { await b.close(); }
 }
@@ -177,6 +188,7 @@ async function testRobot() {
       const ok = await b.waitFor("!!document.querySelector('.rb-win')", { timeout: 25000 }).then(() => true, () => false);
       check(ok, `level ${idx + 1} (${levels[idx].id}) solved with its reference program`);
     }
+    await voiceCheck(b, 'robot');
     checkErrors(b, 'robot');
   } finally { await b.close(); }
 }
@@ -236,6 +248,7 @@ async function testColoring() {
       const kept = await b.eval(`(() => { const el = document.querySelector('[data-region="${target.id}"]'); return el && el.getAttribute('fill'); })()`);
       check(kept && kept.toUpperCase() !== target.before.toUpperCase(), 'colours are saved across a reload', String(kept));
     }
+    await voiceCheck(b, 'coloring');
     checkErrors(b, 'coloring');
   } finally { await b.close(); }
 }
@@ -310,6 +323,7 @@ async function testMachine() {
       const best = (await storage(b)).machine?.best?.[tiers[i]];
       check(best != null, `${tiers[i]}: best score saved`, String(best));
     }
+    await voiceCheck(b, 'machine');
     checkErrors(b, 'machine');
   } finally { await b.close(); }
 }
@@ -374,6 +388,7 @@ async function testOffline() {
         if (a.oops) bad.push(hash);
       }
       check(bad.length === 0, `all games open offline (${base})`, bad.join(','));
+      await voiceCheck(b, `offline ${base}`); // clips must play from the offline cache (range requests)
       await b.offline(false);
       checkErrors(b, `offline ${base}`);
     } finally { await b.close(); }
@@ -412,6 +427,7 @@ async function testRobustness() {
     await tapsOk(b);
     await b.tap('.topbar-back', { wait: 800 });
     check((await where(b)).screen === 'home', 'a single tap once the screen has settled still works');
+    await voiceCheck(b, 'double-taps');
     checkErrors(b, 'double-taps');
   } finally { await b.close(); }
 

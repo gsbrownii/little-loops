@@ -147,3 +147,26 @@ export function sameAnswer(a, b) {
   }
   return a === b;
 }
+
+// ---------- spoken phrases (shared by the game and tools/voice-lines.mjs) ----------
+// Read-aloud lines are spoken as a list of short PARTS so each part can have its own recorded
+// clip in the voice pack (js/core/speech.js plays them in a row; a device voice reads them joined).
+
+/** Spoken name of one answer (a token, or a group of tokens for "set" rounds). */
+export function choiceSpeech(c) {
+  return Array.isArray(c) ? c.map(tokenName).join(', ') : tokenName(c);
+}
+
+/** "Is it lake, cook, or cat?" as parts: ['Is it', 'lake,', 'cook,', 'or cat?']. */
+export function choicesParts(list) {
+  const names = list.map(choiceSpeech);
+  if (!names.length) return [];
+  if (names.length === 1) return ['Is it', `${names[0]}?`];
+  return ['Is it', ...names.slice(0, -1).map((n) => `${n},`), `or ${names[names.length - 1]}?`];
+}
+
+/** "The words are: The, dog, runs." as parts (punctuation on the cards is not read). */
+export function wordsParts(words) {
+  const clean = words.map((w) => String(w).replace(/[.,!?;:]+$/g, ''));
+  return ['The words are:', ...clean.map((w, i) => `${w}${i === clean.length - 1 ? '.' : ','}`)];
+}

@@ -210,7 +210,8 @@ export function mountPaint(root, ctx, parts, note = {}) {
     done = true;
     scheduleSave();
     ctx.celebrate();
-    ctx.say(`${ctx.praise()} What a beautiful picture!`);
+    ctx.say(ctx.praise());
+    ctx.say('What a beautiful picture!', { interrupt: false });
   }
 
   // ---- little animations ----

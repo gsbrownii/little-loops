@@ -19,6 +19,8 @@
 //   7. Schemas         schemas/*.schema.json are sound, and every data file conforms to the JSON Schema of
 //                      its format (2020-12 subset checker below)
 //   8. Offline cache   sw.js precache list is up to date (warning only: run node tools/precache.mjs)
+//  10. Recorded voice  every line the app can speak has a clip in the voice pack (warning only:
+//                      a line without one is spoken by the device voice; run npm run voice)
 //   9. Spoken text     every say / hint / explain / lockedSay / story line in every content file:
 //                      emoji (and, for robot levels, < > { }) are ERRORS; scolding words and British
 //                      spellings are WARNINGS (see docs/CONTENT-FORMAT.md section 2)
@@ -259,7 +261,7 @@ export const REGISTRY_FORMAT = 'app-registry/1';
 const MODULE_KEYS = ['id', 'title', 'status', 'entry', 'css', 'lockedSay', 'tile'];
 const MODULE_ID = /^[a-z][a-z0-9-]*$/;
 const HEX = /^#[0-9a-fA-F]{6}$/;
-const PRECACHED_DIRS = ['css', 'js', 'data', 'art', 'icons']; // see tools/precache.mjs
+const PRECACHED_DIRS = ['css', 'js', 'data', 'art', 'icons', 'audio']; // see tools/precache.mjs
 /** Home screen capacity: big tiles for ready modules, a small "coming soon" row for locked ones. */
 export const HOME = { big: 4, soon: 4, max: 8 };
 
@@ -906,6 +908,21 @@ export async function runAll({ root = REPO_ROOT } = {}) {
       return;
     }
     s.summary = `${lines} spoken line(s) in ${files} file(s)`;
+  });
+
+  // recorded voice --------------------------------------------------------------------------
+  await run('voice', 'Recorded voice (audio/ voice pack)', async (s) => {
+    // Warning-only: a line without a recording still works (the device voice says it).
+    let mod;
+    try { mod = await import(pathToFileURL(path.join(HERE, 'voice-lines.mjs')).href); } catch (err) {
+      s.status = 'SKIP'; s.summary = 'not checked'; s.warnings.push(`could not load tools/voice-lines.mjs: ${err && err.message}`); return;
+    }
+    const r = await mod.checkVoice(root);
+    if (!r.name) { s.warnings.push(`no voice pack at ${r.pack}: the device voice says everything (run npm run voice)`); s.summary = 'no voice pack'; return; }
+    s.summary = `${r.name}: ${r.total - r.missing.length} of ${r.total} line(s) recorded`;
+    if (r.missing.length) {
+      s.warnings.push(`${r.missing.length} line(s) have no recording and will use the device voice (run npm run voice, then npm run precache), e.g. ${r.missing.slice(0, 3).map((l) => JSON.stringify(l.text)).join(', ')}`);
+    }
   });
 
   for (const s of sections) {

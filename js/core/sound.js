@@ -86,6 +86,11 @@ const LIB = {
   whoosh: () => noise(0, 0.3, { vol: 0.12, freq: 400, to: 2400 }),
 };
 
+/** The shared (unlocked) AudioContext, or null if Web Audio is unavailable. */
+export function audioContext() {
+  return ensure();
+}
+
 export const sound = {
   play(name) {
     if (storage.get('settings.sound', true) === false) return;

@@ -15,6 +15,25 @@ Legend: 🔴 = most likely to need a fix · 🟡 = worth checking · 👶 = need
 
 ## 1. Speech (spoken instructions)
 
+The app now speaks with a **recorded voice (Emma)** shipped as small MP3 clips, so the device's
+own text-to-speech is only a fallback. Check these first:
+
+- 🔴 **Recorded voice plays after the start tap** on iPad Safari, the installed iPad app,
+  Android Chrome and Fire/Silk: the home screen should say "Pick a game! Tap a picture." in
+  Emma's (British) voice, not a device voice.
+- 🔴 **iPhone/iPad silent switch and volume:** recorded clips play as media, so they should
+  be heard with the ring/silent switch on. Check the volume balance against sound effects.
+- 🔴 **Offline:** in airplane mode, every game still speaks in Emma's voice (the clips are
+  cached on the first visit; that first visit downloads about 8 MB, so do it on Wi-Fi).
+- 🟡 Voice speed Slow / Fast in grown-up settings changes the clips' speed without making
+  them sound squeaky or deep.
+- 🟡 Lines are never cut off or overlapping when tapping quickly, and nothing keeps talking
+  after leaving a game.
+- 🟡 Picking a device voice in grown-up settings switches everything to that voice; picking
+  "Emma" switches back.
+
+Device text-to-speech (used only for unrecorded lines or when a grown-up picks a device voice):
+
 - 🔴 **First tap unlocks speech.** After pressing the big green ▶ on the start screen, the
   home screen should say "Pick a game! Tap a picture." Try iPad Safari, the installed iPad
   app, Android Chrome and Fire/Silk. Silk's speech support is the biggest unknown.

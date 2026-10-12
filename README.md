@@ -20,12 +20,15 @@ instruction is spoken aloud, everything is tap or drag, and mistakes just get a 
 
 **Privacy:** no accounts, no ads, no analytics, and the app itself makes no network calls. A
 Content-Security-Policy blocks anything off-site. Progress is saved only in the device's
-browser storage. After the first visit the whole app works offline. Spoken instructions use
-the device's own text-to-speech voice; if that is an online voice (marked "needs internet" in
-grown-up settings), the browser sends the spoken words to that voice's provider, so pick a
-local voice for full privacy.
+browser storage. After the first visit the whole app works offline. Spoken instructions use a
+recorded voice that ships with the app (see [Voice](#voice)), so they stay on the device too.
+Only if a grown-up picks a device voice marked "needs internet" does the browser send spoken
+words to that voice's provider.
 
 ---
+
+**Live:** <https://gsbrownii.github.io/little-loops/> (GitHub repository
+[gsbrownii/little-loops](https://github.com/gsbrownii/little-loops)).
 
 ## Run it on your computer
 
@@ -84,9 +87,14 @@ Then open <http://localhost:8080/>. To test the GitHub Pages sub-path setup
 5. After about a minute the app is live at `https://YOUR-NAME.github.io/little-loops/`.
    Open it once while online; after that it works offline.
 
-**Updating later:** edit, run `npm run precache` (plus validate and test), commit and push
-(or upload the changed files and `sw.js`). Devices pick up the new version the next time
-the app is on its start or home screen. It never reloads in the middle of a game.
+**Updating later:** edit; if you changed anything the app says (levels, puzzles, phrases), run
+`npm run voice` (see [Voice](#voice)); then `npm run precache`, `npm run validate` and
+`npm test`; then commit and push:
+```bash
+git add -A && git commit -m "Describe the change" && git push
+```
+(Or upload the changed files plus `sw.js` on GitHub.) Devices pick up the new version the next
+time the app is on its start or home screen. It never reloads in the middle of a game.
 
 `.nojekyll` tells GitHub Pages to serve the files as-is. The app uses only relative URLs, so
 it works at any sub-path or on a custom domain.
@@ -105,8 +113,9 @@ it works at any sub-path or on a custom domain.
 Tap the **gear** on the home screen, then **press and hold the yellow button for 3 seconds**
 (the parent gate; it also protects **Print** in Coloring). Settings:
 
-- Spoken instructions on/off, voice speed, voice choice (+ test). Voices marked "needs
-  internet" won't work offline, so pick a local one.
+- Spoken instructions on/off, voice speed, and the voice: **Emma** (the recorded Little Loops
+  voice, the default) or any voice built into the device. Device voices marked "needs
+  internet" won't work offline.
 - Sound effects on/off.
 - Robot Puzzles: **Unlock all puzzle levels**.
 - Loop Machine: **Read word answers aloud** (for kids who can't read the Big/Super answers yet).
@@ -128,6 +137,7 @@ data/coloring/*.json             animals, accessories, backgrounds (line art as 
 data/machine/rounds.json         the Loop Machine puzzle bank
 schemas/                         JSON Schemas for every content file
 art/  icons/                     mascot, home tiles, app icons
+audio/emma/                      the recorded voice: one small MP3 per spoken line + index.json
 tools/                           local server, validators, precache, icons, tests (not deployed to the cache)
 docs/ARCHITECTURE.md             module contract + specs for each game
 docs/CONTENT-FORMAT.md           every content format, for people and for AI generators
@@ -145,6 +155,41 @@ sanitize everything, so bad or malicious content can't inject markup. See
 To add **Story Movie** or **Builder**, follow "Future modules" in `docs/ARCHITECTURE.md`. A
 draft story format already exists in `schemas/story.schema.json`.
 
+## Voice
+
+Everything the app says is pre-recorded in a natural voice (**Emma**, a British English voice
+from the free, open-source [Kokoro](https://github.com/thewh1teagle/kokoro-onnx) text-to-speech
+model), so it sounds the same on every device and works offline. The clips (about 1,300 short
+MP3s) live in `audio/emma/`. A line without a recording, such as a newly added puzzle, is
+spoken by the device's own voice until it is recorded, so new content never breaks.
+
+**After changing anything the app says**, record the new lines (only new or changed lines are
+recorded), then refresh the offline cache:
+```bash
+npm run voice
+```
+```bash
+npm run precache
+```
+`npm run validate` warns if any line is missing a recording.
+
+**One-time setup** on a new computer: Python 3.10+, about 400 MB, kept outside this folder in
+`%LOCALAPPDATA%\little-loops-voice` (set `LL_VOICE_HOME` to use another folder):
+```bash
+python -m venv "$LOCALAPPDATA/little-loops-voice/venv"
+```
+```bash
+"$LOCALAPPDATA/little-loops-voice/venv/Scripts/python" -m pip install kokoro-onnx soundfile lameenc
+```
+Then download `kokoro-v1.0.onnx` and `voices-v1.0.bin` from the kokoro-onnx
+[releases page](https://github.com/thewh1teagle/kokoro-onnx/releases) ("model-files-v1.0")
+into `%LOCALAPPDATA%\little-loops-voice\models\`.
+
+**A different voice:** run
+`npm run voice -- --voice af_heart --name Heart --lang en-us --out audio/heart`, point
+`voicePack` in `js/config.js` at `audio/heart/index.json`, delete the old folder, then run
+`npm run precache`.
+
 ## Scripts
 
 | command | what it does |
@@ -156,6 +201,8 @@ draft story format already exists in `schemas/story.schema.json`.
 | `npm run precache` | regenerate `sw.js`; run after every edit (to see it locally) and before every deploy |
 | `npm run precache:check` | fail if `sw.js` is out of date |
 | `npm run icons` | re-render the PNG icons from `icons/icon.svg` |
+| `npm run voice` | record any new spoken lines in the Emma voice (see [Voice](#voice)) |
+| `npm run voice:check` | fail if any spoken line has no recording |
 | `npm test` | end-to-end smoke test in headless Chrome (all games, offline, sub-path, layouts) |
 | `node tools/render-coloring.mjs --sheet combos` | preview coloring art (writes `coloring-combos.png` to your temp folder and prints the path; never write previews into this folder, or they get uploaded) |
 

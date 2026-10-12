@@ -14,7 +14,9 @@
     "precache": "node tools/precache.mjs",
     "precache:check": "node tools/precache.mjs --check",
     "test": "node tools/smoke-test.mjs",
-    "validate:machine": "node tools/validate-machine.mjs"
+    "validate:machine": "node tools/validate-machine.mjs",
+    "voice": "node tools/voice.mjs",
+    "voice:check": "node tools/voice-lines.mjs --check"
   },
   "engines": {
     "node": ">=22"

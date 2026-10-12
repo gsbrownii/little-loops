@@ -6,7 +6,7 @@
 //   node tools/precache.mjs --check   exit 1 if sw.js is stale (use before every deploy / in CI)
 //   node tools/precache.mjs --list    print the files that would be precached
 //
-// Precached: index.html, manifest.webmanifest, css/**, js/**, data/**, art/**, icons/**, plus './'
+// Precached: index.html, manifest.webmanifest, css/**, js/**, data/**, art/**, icons/**, audio/**, plus './'
 // (the scope root, an alias of index.html). Never: tools/, docs/, schemas/, node_modules/, .git/,
 // dotfiles, *.md, package*.json, sw.js itself, editor/OS junk. Paths are app-relative ('js/app.js'),
 // sorted by code point, so output is deterministic on every OS. The version is a short SHA-256 of
@@ -25,7 +25,7 @@ import { fileURLToPath } from 'node:url';
 
 export const APP_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const ROOT_FILES = ['index.html', 'manifest.webmanifest'];
-export const ROOT_DIRS = ['css', 'js', 'data', 'art', 'icons'];
+export const ROOT_DIRS = ['css', 'js', 'data', 'art', 'icons', 'audio'];
 // Only ROOT_FILES and ROOT_DIRS are scanned, so top-level tools/ docs/ schemas/ sw.js are never seen.
 // Inside the scanned folders, skip these at any depth:
 const SKIP_DIRS = new Set(['node_modules']);
@@ -77,6 +77,11 @@ export function unsafePaths(files) {
   return files.filter((f) => !isUrlSafePath(f));
 }
 
+// Media (the recorded voice, audio/**) is listed as 'path?v=<content hash>': sw.js downloads it
+// best-effort (not all-or-nothing) and reuses unchanged clips from the previous version's cache,
+// so an update never re-downloads megabytes of unchanged audio.
+export const isMedia = (f) => f.startsWith('audio/');
+
 /** { files, urls (with './' first), version, bytes }. Throws if any file name is not URL-safe. */
 export function buildPrecache(root = APP_ROOT) {
   const files = collectFiles(root);
@@ -89,13 +94,15 @@ export function buildPrecache(root = APP_ROOT) {
   }
   const hash = crypto.createHash('sha256');
   let bytes = 0;
+  const urls = ['./'];
   for (const f of files) {
     let buf = fs.readFileSync(path.join(root, f));
     bytes += buf.length;
     if (TEXT_EXT.test(f) && buf.includes(13)) buf = Buffer.from(buf.toString('latin1').replace(/\r\n/g, '\n'), 'latin1');
     hash.update(f).update('\0').update(buf).update('\0');
+    urls.push(isMedia(f) ? `${f}?v=${crypto.createHash('sha1').update(buf).digest('hex').slice(0, 8)}` : f);
   }
-  return { files, urls: ['./', ...files], version: hash.digest('hex').slice(0, 10), bytes };
+  return { files, urls, version: hash.digest('hex').slice(0, 10), bytes };
 }
 
 const quote = (s) => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;

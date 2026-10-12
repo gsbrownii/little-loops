@@ -810,14 +810,19 @@ there must declare `builder/1`), and a section in this document.
    Levels: `node tools/validate-levels.mjs --maps`. Loop Machine: `node tools/validate-machine.mjs
    --list` (one line per round, for proofreading). Check that it is friendly, readable, original
    and suitable for the ages it targets.
-4. **Refresh the offline cache.** `node tools/precache.mjs` rewrites the service worker's file
+4. **Record the new lines.** Everything the app says is pre-recorded (`audio/emma/`, see the
+   README "Voice" section). New or changed `say` / `hint` / `explain` / word / choice text needs
+   `npm run voice`, which records only what is new. Until then those lines are spoken by the
+   device's own voice, so generated content works right away, just in a different voice.
+   `node tools/validate.mjs` (section "Recorded voice") and `npm run voice:check` list them.
+5. **Refresh the offline cache.** `node tools/precache.mjs` rewrites the service worker's file
    list and version so installed apps pick up the change (`--check` exits 1 if it is stale; run
    it before every deploy). Run it before testing locally too: the service worker also serves
    the cached copy on `localhost`, so without it a reload still shows the old content.
-5. **Test.** Run the automated smoke test if the repo has one (`npm test` runs
+6. **Test.** Run the automated smoke test if the repo has one (`npm test` runs
    `tools/smoke-test.mjs`), then play it: phone and tablet, portrait and landscape, with sound
    on (every new spoken line), and print a coloring page.
-6. **Deploy.** Commit and push; GitHub Pages serves the new files. Installed apps update the
+7. **Deploy.** Commit and push; GitHub Pages serves the new files. Installed apps update the
    next time they start.
 
 **Generator checklist** (put this in the prompt):

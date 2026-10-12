@@ -141,6 +141,20 @@ Keep spoken sentences short (≤ ~15 words, Chrome cuts long utterances), in US 
 interrupts whatever is speaking. Feedback lines via `ctx.say` also interrupt by default;
 pass `{ interrupt: false }` to queue.
 
+**Recorded voice.** `js/core/speech.js` first looks each line up in the voice pack
+(`APP.voicePack` = `audio/emma/index.json`: normalized text → MP3 clip, recorded with Kokoro by
+`npm run voice`) and plays the clip on one shared `<audio>` element (unlocked on the start tap;
+Web Audio is the fallback). Lines without a clip use the device's text-to-speech, preferring a
+voice with the pack's accent, and are recorded in `speech.missing` (the smoke test fails on
+any). A grown-up can pick a device voice in settings instead. Rules for module authors:
+- Speak **fixed strings** (or data fields) so `tools/voice-lines.mjs` can find them: a literal
+  that starts with a capital letter and ends with `.`, `!` or `?` is collected automatically.
+- A line built from pieces (e.g. "Is it lake, cook, or cat?") must be passed as an array of
+  **parts** — `ctx.say(['Is it', 'lake,', 'cook,', 'or cat?'])` — each part gets its own clip,
+  and the collector must be able to enumerate every part (see `choicesParts`/`wordsParts` in
+  `js/modules/machine/tokens.js`). Never interpolate numbers or names into one long string.
+- After changing any spoken text: `npm run voice`, then `npm run precache`.
+
 ## Content is data
 
 All content lives in JSON under `data/`, validated by `tools/validate-*.mjs` (all run by

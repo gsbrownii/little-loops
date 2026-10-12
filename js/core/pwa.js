@@ -20,6 +20,10 @@ export function registerServiceWorker() {
     .register('./sw.js', { scope: './' })
     .then((reg) => {
       registration = reg;
+      // Fill in any voice clips a flaky first install could not download (best-effort, background).
+      navigator.serviceWorker.ready
+        .then((r) => { if (r.active) r.active.postMessage({ type: 'TOPUP' }); })
+        .catch(() => {});
       // An update that finishes installing while the splash is still up can be applied right away.
       reg.addEventListener('updatefound', () => {
         const sw = reg.installing;

@@ -64,14 +64,17 @@ export function renderSettings(root, { chrome, registry, go }) {
   const fillVoices = () => {
     const voices = speech.voices();
     const cur = speech.currentVoiceURI();
+    const pack = speech.packInfo();
+    // The recorded Little Loops voice comes first (value ''); device voices follow.
+    const first = h('option', { value: '' }, pack ? `${pack.name}: Little Loops voice (works offline)` : 'Automatic');
+    first.selected = cur === '';
     voiceSelect.replaceChildren(
-      ...(voices.length
-        ? voices.map((v) => {
-            const o = h('option', { value: v.uri }, `${v.name} (${v.lang})${v.local ? '' : ' — needs internet'}`);
-            o.selected = v.uri === cur;
-            return o;
-          })
-        : [h('option', { value: '' }, 'Default voice')])
+      first,
+      ...voices.map((v) => {
+        const o = h('option', { value: v.uri }, `Device: ${v.name} (${v.lang})${v.local ? '' : ' — needs internet'}`);
+        o.selected = cur !== '' && v.uri === cur;
+        return o;
+      })
     );
     updateVoiceNote(voices, cur);
   };
@@ -155,7 +158,7 @@ export function renderSettings(root, { chrome, registry, go }) {
       h('div', { class: 'set-row' }, h('span', { class: 'set-label' }, 'Progress', h('small', null, storage.isPersistent() ? 'Saved on this device only.' : 'This browser is not saving progress (private mode?).')), resetBtn)),
     section('Privacy',
       h('p', { class: 'set-note' }, `${APP.name} has no accounts, no ads and no tracking, and collects no data itself. Progress is saved only on this device. After the first visit it works offline.`),
-      h('p', { class: 'set-note' }, 'Spoken instructions use this device’s text-to-speech voice. With a voice marked “needs internet”, the browser sends the spoken words to that voice provider (for example Google or Microsoft). Pick a voice without that label to keep everything on the device.')),
+      h('p', { class: 'set-note' }, 'Spoken instructions use the recorded Little Loops voice, which is part of the app and plays on this device. If you pick a device voice instead (or a new line has no recording yet), this device’s text-to-speech speaks; with a voice marked “needs internet”, the browser sends the spoken words to that voice provider (for example Google or Microsoft).')),
     h('p', { class: 'set-version' }, `${APP.name} v${APP.version}`),
     h('div', { class: 'set-done' }, h('button', { type: 'button', class: 'btn-big btn-go', 'aria-label': 'Done', onClick: () => go('#/') }, icon('check')))
   );
